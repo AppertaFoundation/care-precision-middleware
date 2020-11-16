@@ -1,0 +1,346 @@
+{
+   "openapi": "3.0.3",
+   "info": {
+     "title": "Open E-React API",
+     "description": "The Open E-React base API definition",
+     "termsOfService": "https://opusvl.com/terms/",
+     "contact": {
+       "email": "support@opusvl.com"
+     },
+     "license": {
+       "name": "Apache 2.0",
+       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+     },
+     "version": "1.0.0"
+   },
+   "externalDocs": {
+     "description": "Find out more about OpusVL",
+     "url": "https://opusvl.com"
+   },
+   "servers": [
+     {
+       "url": "https://api.c19.devmode.xyz/api/1.0.0"
+     }
+   ],
+   "tags": [
+     {
+       "name": "admin",
+       "description": "Administrative functions"
+     },
+     {
+       "name": "meta",
+       "description": "Meta functions"
+     }
+   ],
+   "paths": {
+     "/_/auth": {
+       "get": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Retrieve the authentification system in place",
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "type": "array",
+                   "items": {
+                     "$ref": "#/components/schemas/authstate"
+                   }
+                 }
+               }
+             }
+           }
+         }
+       },
+       "post": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Authorise a session with a username and password, returns a JSON with",
+         "requestBody": {
+           "description": "order placed for purchasing the patient",
+           "content": {
+             "application/json": {
+               "schema": {
+                 "$ref": "#/components/schemas/authpacket"
+               }
+             }
+           },
+           "required": true
+         },
+         "responses": {
+           "401": {
+             "description": "invalid authorisation attempt"
+           }
+         }
+       }
+     },
+     "/_/session": {
+       "get": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Return any information attached to the user current session",
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "$ref": "#/components/schemas/sessiondetails"
+                 }
+               }
+             }
+           }
+         }
+       },
+       "delete": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Delete a session (will force logout)",
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       },
+       "post": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Associate a 3rd party auth token and a session",
+         "requestBody": {
+           "description": "order placed for purchasing the patient",
+           "content": {
+             "application/json": {
+               "schema": {
+                 "$ref": "#/components/schemas/authsession"
+               }
+             }
+           },
+           "required": true
+         },
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       }
+     },
+     "/_/audit": {
+       "get": {
+         "tags": [
+           "admin"
+         ],
+         "summary": "Provide access to privliedged auditor functions",
+         "description": "Unknown what to do with this one as of yet",
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       }
+     },
+     "/meta/demographics/patient_list": {
+       "get": {
+         "tags": [
+           "meta"
+         ],
+         "summary": "Return a list of patients at the organization",
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "$ref": "#/components/schemas/patientlist"
+                 }
+               }
+             }
+           }
+         }
+       }
+     },
+     "/meta/demographics/patient": {
+       "get": {
+         "tags": [
+           "meta"
+         ],
+         "summary": "Return the postal address for a patient",
+         "parameters": [
+           {
+             "name": "patientId",
+             "in": "query",
+             "description": "ID of patient whose address needs to be fetched",
+             "required": true,
+             "schema": {
+               "type": "string"
+             }
+           }
+         ],
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "type": "object"
+                 }
+               }
+             }
+           }
+         }
+       }
+     },
+     "/meta/demographics/contact_information/{patientId}": {
+       "get": {
+         "tags": [
+           "meta"
+         ],
+         "summary": "Return the postal address for a patient",
+         "parameters": [
+           {
+             "name": "patientId",
+             "in": "path",
+             "description": "ID of patient whose address needs to be fetched",
+             "required": true,
+             "schema": {
+               "type": "string"
+             }
+           }
+         ],
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "type": "object",
+                   "additionalProperties": {
+                     "type": "integer",
+                     "format": "int32"
+                   }
+                 }
+               }
+             }
+           }
+         }
+       }
+     },
+     "/meta/demographics/user_info": {
+       "get": {
+         "tags": [
+           "meta"
+         ],
+         "summary": "Return user info (unsure what it would return)",
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       }
+     },
+     "/dynamic_view": {
+       "get": {
+         "tags": [
+           "dynamic_list"
+         ],
+         "summary": "Return user info (unsure what it would return)",
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       }
+     },
+     "/dynamic_view/contextual_problem_view": {
+       "get": {
+         "tags": [
+           "dynamic_list"
+         ],
+         "summary": "Return user info (unsure what it would return)",
+         "responses": {
+           "200": {
+             "description": "successful operation"
+           }
+         }
+       }
+     },
+     "/cdr": {
+       "get": {
+         "tags": [
+           "templatelist"
+         ],
+         "summary": "Return user info (unsure what it would return)",
+         "responses": {
+           "200": {
+             "description": "successful operation",
+             "content": {
+               "application/json": {
+                 "schema": {
+                   "$ref": "#/components/schemas/templatelist"
+                 }
+               }
+             }
+           }
+         }
+       }
+     }
+   },
+   "components": {
+     "schemas": {
+       "patientlist": {
+         "type": "array",
+         "items": {
+           "type": "object"
+         }
+       },
+       "authsession": {
+         "type": "object",
+         "properties": {
+           "token": {
+             "type": "string"
+           }
+         }
+       },
+       "sessiondetails": {
+         "type": "object"
+       },
+       "dynamic_list": {
+         "type": "object"
+       },
+       "templatelist": {
+         "type": "array",
+         "items": {
+           "type": "string"
+         }
+       },
+       "authpacket": {
+         "type": "object",
+         "properties": {
+           "username": {
+             "type": "string"
+           },
+           "password": {
+             "type": "string"
+           },
+           "domain": {
+             "type": "string"
+           }
+         }
+       },
+       "authstate": {
+         "type": "object",
+         "properties": {
+           "session": {
+             "type": "string"
+           }
+         }
+       }
+     }
+   }
+ }

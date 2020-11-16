@@ -23,7 +23,6 @@ use POE qw(
 
 use URI;
 use URI::QueryParam;
-
 use HTTP::Request::Common;
 use HTTP::Status;
 use HTTP::Cookies;
@@ -34,6 +33,8 @@ use JSON::MaybeXS ':all';
 use Data::UUID;
 use DateTime;
 use File::Slurp;
+use Storable qw( dclone );
+use Data::Search;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -736,13 +737,15 @@ my $handler__auth = POE::Session->create(
     }
 );
 
-my $handler__meta_demographics_patient_list = POE::Session->create(
+my $handler__meta_demographics_patient = POE::Session->create(
     inline_states => {
         '_start'            =>  sub {
             my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
 
             my $handler     =   "$api_prefix/meta/demographics/patient_list";
             $heap->{myid}   =   "handler::$handler";
+
+            warn "SearchSessionX: ".$heap->{myid};
 
             $kernel->alias_set($heap->{myid});
             $kernel->post('service::main','register_handler',$heap->{myid});
@@ -764,111 +767,173 @@ my $handler__meta_demographics_patient_list = POE::Session->create(
 
             $kernel->yield(lc($packet->{request}->method),$packet);
         },
+        'boop' => sub {
+            warn "GOT IT";
+        },
         'get'               =>  sub {
             my ( $kernel, $heap, $session, $packet ) =
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
-            my $response    =   $packet->{response};
-            my $request     =   $packet->{request};
-            my $method      =   lc($request->method);
+            my $response        =   $packet->{response};
+            my $request         =   $packet->{request};
 
-            # Generate a patient DB compatible with patient_list
-            my @patients;
-            foreach my $patient (@{$global->{patient_db}->{entry}}) {
-                my $save_space  =   {
-                    id      =>   $patient->{_uuid},
-                    name    =>  []
-                };
-                foreach my $name (@{$patient->{resource}->{name}}) {
-                    my $family  =   $name->{family};
-                    my $prefix  =   [$name->{prefix}->[0]];
-                    my $given   =   [$name->{given}->[0]];
-                    my $use     =   $name->{use};
+            $response->code(200);
+            $response->header('Content-Type' => 'application/json');
 
-                    if ($use ne 'official') { next }
+            # Build a list of patients
+            my $return = [];
+            my $mode = $request->uri->query_param('function');
 
-                    push @{$save_space->{name}},{
-                        family  =>  $family,
-                        given   =>  $given,
-                        prefix  =>  $prefix
+            foreach my $customer (@{$global->{patient_db}->{entry}}) {
+                my $name = $customer->{resource}->{name};
+                my $identifier = $customer->{_uuid};
+
+                my $datablock = { name => $name, id => $identifier };
+
+                if ($mode && $mode eq 'full') {
+                    $datablock->{'birthDate'}   =
+                        $customer->{resource}->{'birthDate'};
+                    $datablock->{'gender'}      =
+                        $customer->{resource}->{'gender'};
+                    $datablock->{'identifier'}  =
+                        $customer->{resource}->{'identifier'};
+                    $datablock->{'location'}    =
+                        'Bedroom';
+
+                    $datablock->{'assessment'} = {};
+
+                    # TODO Go make a query to ehrbase for all the latest versions
+                    # of these
+                    $datablock->{'assessment'}->{denwis}->{value}   =   do {
+                        my $return;
+                        if (int(rand(2)) == 1) {
+                            $return = 1+int(rand(20));
+                        }
+                        $return;
+                    };
+
+                    $datablock->{'assessment'}->{covid}->{value}   =   do {
+                        my $return;
+                        if (int(rand(2)) == 1) {
+                            $return->{suspected_symptom} = 'Some text probably';
+                            $return->{exposure_to_covid} = int(rand(2));
+                            $return->{test_for_covid_result} = int(rand(2));
+                            $return->{recovered} = int(rand(2));
+                            $return->{isolation_status} = '? What type is this';
+                            $return->{test_status} = '? What type is this';
+                        }
+                        $return;
+                    };
+
+                    $datablock->{'assessment'}->{sepsis}->{value}   =   do {
+                        my $return;
+                        if (int(rand(2)) == 1) {
+                            my @flags = qw(red amber grey);
+                            my $selector = int(rand(1+scalar(@flags)));
+                            $return->{flag} = $flags[$selector];
+                        }
+                        $return;
+                    };
+
+                    $datablock->{'assessment'}->{news2}->{value}   =   do {
+                        my $return;
+                        if (int(rand(2)) == 1) {
+                            $return  = int(rand(100));
+                        }
+                        $return;
                     };
                 }
-                push @patients,$save_space;
+                push @{$return},$datablock;
             }
 
-            # Should do some sort of auth call here TODO 
-            $response->code( 200 );
-            $response->header('Content-Type' => 'application/json');
-            $response->content(encode_json(\@patients));
+            $response->content(encode_json($return));
 
             $kernel->yield('finalize', $response);
         },
-        'finalize'          =>  sub {
-            my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
-            $kernel->post( 'HTTPD', 'DONE', $response );
-        },
-        '_default'          =>  sub {
-            my ($kernel,$heap,$event,$args) = @_[KERNEL,HEAP,ARG0,ARG1];
-            $kernel->post('service::main','unimplemented',$heap->{myid},$event,$args);
-        }
-    }
-);
-
-my $handler__meta_demographics_patient = POE::Session->create(
-    inline_states => {
-        '_start'            =>  sub {
-            my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
-
-            my $handler     =   "$api_prefix/meta/demographics/patient";
-            $heap->{myid}   =   "handler::$handler";
-
-            $kernel->alias_set($heap->{myid});
-            $kernel->post('service::main','register_handler',$heap->{myid});
-        },
-        'process_request'   =>  sub {
-            my ( $kernel, $heap, $session, $sender, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, SENDER, ARG0 ];
-
-            $kernel->yield(lc($packet->{request}->method),$packet);
-        },
-        'get'               =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
+        '_search'           =>  sub {
+            my ( $kernel, $heap, $session, $payload ) =
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
-            my $response    =   $packet->{response};
-            my $request     =   $packet->{request};
-            my $method      =   lc($request->method);
+            warn "Searcxh called";
 
-            # Check we have pequired params
-            if (!$request->uri->query_param('patientId')) {
-                $response->code(400);
-                $response->header('Content-Type' => 'text/plain');
-                $response->content('Bad request');
-                $kernel->yield('finalize',$response);
-                return;
-            }
+            # Response handler
+            my $returned_items  = [];
 
-            # Assume this is save to retrieve now
-            my $param_parentid = $request->uri->query_param('patientId');
+            # Lets see check our arguments for the search
+            my $search_system       =   $payload->{filter}->{system};
+            my $search_target       =   $payload->{filter}->{target};
+            my $search_match        =   $payload->{filter}->{match};
 
-            # Collect the required values
-            my $save_space = {};
-            foreach my $patient (@{$global->{patient_db}->{entry}}) {
-                if ($patient->{_uuid} eq $param_parentid) {
-                    my $resource                    =   $patient->{resource};
-                    $save_space->{id}               =   $patient->{_uuid};
-                    $save_space->{location}         =   $resource->{address};
-                    $save_space->{date_of_birth}    =   $resource->{birthDate};
-                    $save_space->{nhsnumber}        =   $resource->{identifier}->[0]->{value};
-                    $save_space->{gender}           =   $resource->{gender};
-                    last;
+            # Loop through our patien t records looking for matching records
+            foreach my $patient ( @{ $global->{patient_db}->{entry} } ) {
+                # Step into the object via the path we was given to make the
+                # search less heavy
+                my @search_result = datasearch(
+                    data    =>  $patient->{resource},
+                    find    =>  [$search_target,$search_match],
+                    return  =>  'container'
+                );
+
+                my $valid_match = 0;
+                foreach my $search_result (@search_result) {
+                    my @search_data_block =
+                        datasearch(
+                            data    =>  $search_result,
+                            find    =>  ['system',$search_system],
+                            return  =>  'container'
+                        );
+                    
+                    if (@search_data_block > 0) {
+                        push @{$returned_items},@search_data_block;
+                    }
                 }
             }
 
-            if ($save_space->{id}) {
+            return $returned_items;
+        },
+        'post'               =>  sub {
+            my ( $kernel, $heap, $session, $packet ) =
+                @_[ KERNEL, HEAP, SESSION, ARG0 ];
+
+            my $response        =   $packet->{response};
+            my $payload         =   $packet->{request}->decoded_content();
+
+            # State handlers
+            my $decode_success  =   1;
+            try {
+                $payload = decode_json($payload);
+            } catch {
+                $decode_success = 0;
+            };
+
+            if (
+                !defined $payload->{filter}->{system}
+                ||
+                !defined $payload->{filter}->{target}
+                ||
+                !defined $payload->{filter}->{match}
+                ||
+                ref($payload->{filter}->{system}) ne ''
+                ||
+                ref($payload->{filter}->{target}) ne ''
+                ||
+                ref($payload->{filter}->{match}) ne ''
+            )   { 
+                $response->code(500);
+                $response->header('Content-Type' => 'text/plain');
+                $response->content('Invalid request format');
+
+                $kernel->yield('finalize', $response);
+                return;
+            }
+
+            my $returned_items
+                = $kernel->call($session->ID,'_search',$payload);
+
+            if (scalar(@{$returned_items})) {
                 $response->code(200);
                 $response->header('Content-Type' => 'application/json');
-                $response->content(encode_json($save_space));
+                $response->content(encode_json($returned_items));
             }
             else {
                 $response->code(200);
@@ -888,6 +953,44 @@ my $handler__meta_demographics_patient = POE::Session->create(
         }
     }
 );
+
+# sub _navigate_patient_path($patient_info,$search_path) {
+#     # Scan each patient for a record matching the path
+
+#     my $patient_info_target = do {
+#         my $patient_recursion_object    =   $patient_info;
+#         while (defined(my $next_key = shift @{$search_path})) {
+#             if (
+#                 ref($patient_recursion_object) eq 'HASH'
+#                 &&
+#                 defined $patient_recursion_object->{$next_key}
+#             ) {
+#                 $patient_recursion_object = 
+#                     $patient_recursion_object->{$next_key};    
+#             }
+#             elsif (
+#                 ref($patient_recursion_object) eq 'ARRAY'
+#                 &&
+#                 $next_key =~ m/^\d+$/
+#                 &&
+#                 $next_key >= 0
+#                 &&
+#                 defined $patient_recursion_object->[$next_key]
+#             ) {
+#                 $patient_recursion_object = 
+#                     $patient_recursion_object->[$next_key];
+#             }
+#             else {
+#                 warn "Could not find it!";
+#                 $patient_recursion_object = {};
+#                 last;
+#             }
+#         }
+#         $patient_recursion_object
+#     };
+
+#     return $patient_info_target;
+# }
 
 my $service_httpd   =   POE::Session->create(
     heap            =>  {
@@ -943,9 +1046,19 @@ my $service_httpd   =   POE::Session->create(
                 validation_error        =>  0,
             };
 
+            # OPTIONS hack
+            if ($method eq 'options') {
+                say STDERR "Requested path: '$request_path' method: OPTIONS, forcing Access-Control-Allow-Origin: * response.";
+                $response->code( 204 );
+                $response->header('Allow' => 'OPTIONS, GET, POST, PUT, DELETE' );
+                $response->header('Access-Control-Allow-Methods' => 'OPTIONS, GET, POST, PUT, DELETE');
+                $response->content('');
+                $kernel->post( 'HTTPD', 'DONE', $response );
+                return
+            }
+
             # Convert any params
             my $params = do {
-                my $error = 0;
                 my $return;
                 foreach my $key ($request->uri->query_param) {
                     my @values = $request->uri->query_param($key);
@@ -954,6 +1067,7 @@ my $service_httpd   =   POE::Session->create(
                         &&
                         ($client_session->{validation_error}++ == 0)
                     )  {
+                        # TODO
                         $response->content( 'Not implemented - Multivalue parameter key' );
                         last;
                     }

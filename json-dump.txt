@@ -1,0 +1,37 @@
+$VAR1 = [
+          [
+            [],
+            'HASH'
+          ],
+          [
+            [
+              'languages'
+            ],
+            'ELEMENT'
+          ],
+          [
+            [
+              'version'
+            ],
+            'ELEMENT'
+          ],
+          [
+            [
+              'tree'
+            ],
+            'ELEMENT'
+          ],
+          [
+            [
+              'templateId'
+            ],
+            'ELEMENT'
+          ],
+          [
+            [
+              'defaultLanguage'
+            ],
+            'ELEMENT'
+          ]
+        ];
+

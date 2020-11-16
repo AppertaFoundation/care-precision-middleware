@@ -1,0 +1,83 @@
+18:15, <daimon> '{"filter":{"key":["system":"https://fhir.nhs.uk/Id/nhs-number"],"path":["identifier",0]}}'
+18:15, <daimon> apparently this json is invalid
+18:15, <daimon> anyone spot where
+18:15, <daimon> ah got it
+18:10, <eedgit> https://chat.phenotype.dev/uploads/45942134c27050df/image.png 
+18:11, <eedgit> 4 day expiry lol
+18:11, <eedgit> - however long it took them ( didn't notify me - probably 3 days)
+18:29, <Buck> daimon: square brackets around an object?
+18:37, <daimon> ["system":"https://fhir.nhs.uk/Id/nhs-number"]
+18:37, <daimon> should be
+18:37, <daimon> ["system","https://fhir.nhs.uk/Id/nhs-number"]
+18:37, <daimon> god damn this search algo is hard
+18:30, <Buck> that looks exactly the same
+18:30, <Buck> I assume you mean {} ?
+18:37, <daimon> no
+18:30, <Buck> oh comma
+18:30, <Buck> it's an array
+18:38, <daimon> yeah
+18:38, <daimon> :P
+18:30, <Buck> I thought it was an object
+18:38, <daimon> man this search algo is fucking killing me
+18:38, <daimon> its bad enough having variance on one side of the match
+18:38, <daimon> but variance on both siders
+18:38, <daimon> with recursion
+18:38, <daimon> is fucking brutal
+18:39, <daimon> got it working kinda
+18:39, <daimon> think its time to take a step back and rewrite it now
+18:39, <daimon> make some notes
+18:39, <daimon> its meant to take path [PATH1,PATH2]
+18:39, <daimon> rather than PATH=PATH
+18:39, <daimon> '{"filter":{"key":["system","https://fhir.nhs.uk/Id/nhs-number"],"path":["identifier",0]}}'
+18:40, <daimon> hmm
+18:40, <daimon> its key that needs to change
+18:40, <daimon> or does it oa162111-ovh
+18:40, <daimon> fuck sake
+18:33, <Buck> don't ask me
+18:33, <Buck> I don't know the specs
+18:33, <Buck> spinningCat should be able to help
+18:40, <daimon> key is wrong
+18:40, <daimon> it should be filter
+18:41, <daimon> then I need target
+18:34, <Buck> have you tried ##customsearchalgorithms ?
+18:41, <daimon> '{"filter":{"system""https://fhir.nhs.uk/Id/nhs-number"],"path":["identifier",0],"target","nhsnumber"}}'
+18:41, <daimon> so ...
+18:41, <daimon> look that each item has identifier element 0
+18:41, <daimon> and system is == that
+18:42, <daimon> so I would need to take a list for validation as AND's
+18:42, <daimon> target is correct
+18:42, <daimon> path becomes the cunt
+18:35, * CryptoDavid has quit (Quit: Connection closed for inactivity)
+18:42, <daimon> because identifier will exist but it being element 0 might not be true
+18:42, <daimon> I could recursively loop results of path to find what matches validation
+18:42, <daimon> but that will be god damn slow
+18:43, <daimon> I could make the entire fucking thing a recursion
+18:43, <daimon> what would I need then
+18:44, <daimon> path defines a base path of an object to start recursing from
+18:36, <Buck> .wordmash
+18:36, <Natasha> The current mash is: agedsrn
+18:44, <daimon> then I could have
+18:44, <daimon> validation:[["system","https://fhir.nhs.uk/Id/nhs-number"],[....more validation]]
+18:44, <daimon> and target remains the same
+18:45, <daimon> so it becomes enter PATH of OBJECT, recurse from there till target is valid then check validation attributes
+18:45, <daimon> ~ mhmmm
+18:45, <daimon> if I use a mass post out to helper sessions rather than a blocking loop
+18:45, <daimon> that SHOULD work.
+18:46, <daimon> well done paul
+18:38, <CoJaBo> The year is 2020. Our HR platform still can't handle apostrophe's in peoples' names.
+18:46, <daimon> change recursion into multi recursive and multi process
+18:46, * daimon pays self on back
+18:46, <daimon> pats*
+
+9:36 AM
+	
+University Hospital (Stop UH5)
+
+
+8:55 AM
+Clifton Road (Stand B)
+
+e
+
+
+8AM -> At Stop
