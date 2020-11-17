@@ -807,7 +807,13 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     $datablock->{'assessment'}->{denwis}->{value}   =   do {
                         my $return;
                         if (int(rand(2)) == 1) {
-                            $return = 1+int(rand(20));
+                            my @trends = qw(raising decreasing first);
+                            my $selector = int(rand(scalar(@trends)));
+                            $return = {
+                                'value'     =>  int(rand(100)),
+                                'trend'     =>  $trends[$selector]
+                            };
+                            $return  =  $return;
                         }
                         $return;
                     };
@@ -815,12 +821,14 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     $datablock->{'assessment'}->{covid}->{value}   =   do {
                         my $return;
                         if (int(rand(2)) == 1) {
-                            $return->{suspected_symptom} = 'Some text probably';
-                            $return->{exposure_to_covid} = int(rand(2));
-                            $return->{test_for_covid_result} = int(rand(2));
-                            $return->{recovered} = int(rand(2));
-                            $return->{isolation_status} = '? What type is this';
-                            $return->{test_status} = '? What type is this';
+                            $return->{suspected_covid_status} =
+                                 'Suspected Symptoms (Assessed but no test)';
+                            $return->{date_isolation_due_to_end} =
+                                '2020-11-10T22:39:31.826Z';
+                            $return->{covid_test_request} =  {
+                                'date'  =>  '2020-11-10T22:39:31.826Z',
+                                'value' =>  'EXAMPLE TEXT'
+                            }
                         }
                         $return;
                     };
@@ -829,7 +837,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         my $return;
                         if (int(rand(2)) == 1) {
                             my @flags = qw(red amber grey);
-                            my $selector = int(rand(1+scalar(@flags)));
+                            my $selector = int(rand(scalar(@flags)));
                             $return->{flag} = $flags[$selector];
                         }
                         $return;
@@ -838,7 +846,13 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     $datablock->{'assessment'}->{news2}->{value}   =   do {
                         my $return;
                         if (int(rand(2)) == 1) {
-                            $return  = int(rand(100));
+                            my @trends = qw(raising decreasing first);
+                            my $selector = int(rand(scalar(@trends)));
+                            $return = {
+                                'value'     =>  int(rand(100)),
+                                'trend'     =>  $trends[$selector]
+                            };
+                            $return  =  $return;
                         }
                         $return;
                     };
