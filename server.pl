@@ -35,6 +35,7 @@ use DateTime;
 use File::Slurp;
 use Storable qw( dclone );
 use Data::Search;
+use DateTime;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -79,7 +80,7 @@ my $api_prefix          =   '/c19-alpha/0.0.1';
 my $api_hostname        =   'api.c19.devmode.xyz';
 my $api_hostname_cookie =   '.c19.devmode.xyz';
 
-my $ehrbase             =   'http://192.168.101.2:8001';
+my $ehrbase             =   'http://192.168.101.3:8002';
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -317,10 +318,10 @@ my $handler__cdr = POE::Session->create(
             $request->header('Accept' => 'application/json');
 
             $kernel->post(
-                'webclient',        # posts to the 'ua' alias
-                'request',          # posts to ua's 'request' state
+                'webclient',                # posts to the 'ua' alias
+                'request',                  # posts to ua's 'request' state
                 'response_list_templates',  # which of our states will receive the response
-                $request,    # an HTTP::Request object,
+                $request,                   # an HTTP::Request object,
                 $packet
             );
         },
@@ -423,13 +424,37 @@ my $handler__cdr = POE::Session->create(
                 my $composition_id = $uuid->to_string($uuid->create());
                 $global->{compose}->{$composition_id} = {
                     template_xml    =>  join('',read_file('composition.xml')),
-                    template_json   =>  {},
                     template        =>  $validated_template
                 };
 
-                $frontend_response->code(201);
-                $frontend_response->content(encode_json({commpositionid => $composition_id}));
-                $frontend_response->header('Location' => "/cdr/compose?compositionid=$composition_id");
+                # POST  /ehrbase/rest/openehr/v1/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition HTTP/1.1\r\n
+                # POST http://192.168.101.3:8002/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition
+
+                # Accept: application/json\r\n
+                # Content-Type: application/xml\r\n
+                # Prefer: representation=minimal\r\n
+                # Authorization: Basic ZWhyYmFzZS11c2VyOlN1cGVyU2VjcmV0UGFzc3dvcmQ=\r\n
+                # User-Agent: PostmanRuntime/7.26.5\r\n
+                # Postman-Token: 786a2ae6-4055-4d29-83a2-cdb599dcb456\r\n
+                # Host: 192.168.101.3:8003\r\n
+                # Accept-Encoding: gzip, deflate, br\r\n
+                # Connection: keep-alive\r\n
+                # Content-Length: 18408\r\n
+
+                use LWP;
+                use LWP::UserAgent;
+                my $uri = "$ehrbase/ehrbase/rest/openehr/v1/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition";
+                my $req = HTTP::Request->new( 'POST', $uri );
+                $req->header( 'Content-Type' => 'application/xml' );
+                $req->header( 'Host' => '192.168.101.3:8003' );
+                $req->content( $global->{compose}->{$composition_id}->{template_xml} );
+
+                warn $req->as_string;
+
+                my $lwp = LWP::UserAgent->new;
+                my $response = $lwp->request( $req );
+
+                $frontend_response->code($response->code);
             }
 
             $kernel->yield('finalize', $frontend_response);
@@ -470,8 +495,9 @@ my $handler__cdr_compose = POE::Session->create(
             my $response    =   $packet->{response};
             my $request     =   $packet->{request};
             my $method      =   lc($request->method);
+            my $params      =   $packet->{params};
 
-            if (!$request->uri->query_param('compositionid'))
+            if (!$params->{'compositionid'})
             {
                 $response->code( 400 );
                 $response->header('Content-Type' => 'plain/text');
@@ -480,7 +506,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
 
-            my $composition_id = $request->uri->query_param('compositionid');
+            my $composition_id = $params->{'compositionid'};
             $packet->{composition_id}   =   $composition_id;
 
             if (!$global->{compose}->{$composition_id}) {
@@ -491,7 +517,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
             else {
-                my $function = $request->uri->query_param('function') // 'default';
+                my $function = $params->{'function'} // 'default';
                 my $handler = join('_','func',$method,$function);
                 $kernel->yield($handler, $packet);
             }
@@ -502,9 +528,10 @@ my $handler__cdr_compose = POE::Session->create(
 
             my $response    =   $packet->{response};
             my $request     =   $packet->{request};
+            my $params      =   $packet->{params};
             my $method      =   lc($request->method);
 
-            if (!$request->uri->query_param('compositionid'))
+            if (!$params->{'compositionid'})
             {
                 $response->code( 400 );
                 $response->header('Content-Type' => 'plain/text');
@@ -513,7 +540,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
 
-            my $composition_id = $request->uri->query_param('compositionid');
+            my $composition_id = $params->{'compositionid'};
             $packet->{composition_id}   =   $composition_id;
 
             if (!$global->{compose}->{$composition_id}) {
@@ -524,7 +551,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
             else {
-                my $function = $request->uri->query_param('function') // 'default';
+                my $function = $params->{'function'} // 'default';
                 my $handler = join('_','func',$method,$function);
                 $kernel->yield($handler, $packet);
             }
@@ -535,9 +562,10 @@ my $handler__cdr_compose = POE::Session->create(
 
             my $response    =   $packet->{response};
             my $request     =   $packet->{request};
+            my $params      =   $packet->{params};
             my $method      =   lc($request->method);
 
-            if (!$request->uri->query_param('compositionid'))
+            if (!$params->{'compositionid'})
             {
                 $response->code( 400 );
                 $response->header('Content-Type' => 'plain/text');
@@ -546,7 +574,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
 
-            my $composition_id = $request->uri->query_param('compositionid');
+            my $composition_id = $params->{'compositionid'};
             $packet->{composition_id}   =   $composition_id;
 
             if (!$global->{compose}->{$composition_id}) {
@@ -557,7 +585,7 @@ my $handler__cdr_compose = POE::Session->create(
                 return;
             }
             else {
-                my $function = $request->uri->query_param('function') // 'default';
+                my $function = $params->{'function'} // 'default';
                 my $handler = join('_','func',$method,$function);
                 $kernel->yield($handler, $packet);
             }
@@ -745,7 +773,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $handler     =   "$api_prefix/meta/demographics/patient_list";
             $heap->{myid}   =   "handler::$handler";
 
-            warn "SearchSessionX: ".$heap->{myid};
+            my $datetime = DateTime->now;
 
             $kernel->alias_set($heap->{myid});
             $kernel->post('service::main','register_handler',$heap->{myid});
@@ -753,13 +781,147 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $patient_list = decode_json(read_file('patients.json'));
 
             my @commit_list;
-            foreach my $patient (@{$patient_list->{entry}}) {
+
+            # Simplify names, add assessments and digitize date of birth
+            MAIN: foreach my $patient (@{$patient_list->{entry}}) {
                 $patient->{_uuid} = $uuid->to_string($uuid->create());
+
+                my $name_res    =   $patient->{resource}->{name};
+                my $name_use    =   [];
+
+                NAME: foreach my $oldname (@{$name_res})  {
+                    my $new_name = [
+                        $oldname->{prefix}->[0] || '',
+                        $oldname->{given}->[0] || '',
+                        $oldname->{family} || ''
+                    ];
+
+                    if ($oldname->{use} && $oldname->{use} eq 'official')  { 
+                        $name_use = $new_name;
+                    }
+                    else {
+                        push @{$patient->{resource}->{name_other}},$new_name;
+                    }
+                }
+
+                # Add the full name as the first name_other
+                push @{$patient->{resource}->{name_other}},$name_use;
+                # Overwrite the old style name with a normal one
+                $patient->{resource}->{name} = join(' ',@{$name_use});
+
+
+                # Move the nhs-number to make it easier to search
+                $patient->{resource}->{nhsnumber}   = do {
+                    my $return;
+                    foreach my $id (@{$patient->{resource}->{identifier}}) {
+                        if (
+                            defined $id->{'system'} 
+                            && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
+                        )  {
+                            $return = $id->{'value'};
+                        }
+                    }
+                    $return
+                };
+
+
+                # Add example examinations
+                $patient->{'assessment'} = {};
+
+                # TODO Go make a query to ehrbase for all the latest versions
+                # of these
+                $patient->{'assessment'}->{denwis}->{value}   =   do {
+                    my $return;
+                    if (int(rand(2)) == 1) {
+                        my @trends = qw(raising decreasing first same); 
+                        my $selector = int(rand(scalar(@trends)));
+                        $return = {
+                            'value'     =>  int(rand(20)),
+                            'trend'     =>  $trends[$selector]
+                        };
+                        $return  =  $return;
+                    }
+                    $return;
+                };
+
+                $patient->{'assessment'}->{covid}->{value}   =   do {
+                    my $return;
+                    if (int(rand(2)) == 1) {
+                        my @flags = qw(red amber grey green);
+                        my $selector = int(rand(scalar(@flags)));
+                        $return->{suspected_covid_status} =
+                                $flags[$selector];
+                        $return->{date_isolation_due_to_end} =
+                            '2020-11-10T22:39:31.826Z';
+                        $return->{covid_test_request} =  {
+                            'date'  =>  '2020-11-10T22:39:31.826Z',
+                            'value' =>  'EXAMPLE TEXT'
+                        }
+                    }
+                    $return;
+                };
+
+                $patient->{'assessment'}->{sepsis}->{value}   =   do {
+                    my $return;
+                    if (int(rand(2)) == 1) {
+                        my @flags = qw(red amber grey);
+                        my $selector = int(rand(scalar(@flags)));
+                        $return = $flags[$selector];
+                    }
+                    $return;
+                };
+
+                $patient->{'assessment'}->{news2}->{value}   =   do {
+                    my $return;
+                    if (int(rand(2)) == 1) {
+                        my @trends = qw(raising decreasing first same);
+                        my $selector = int(rand(scalar(@trends)));
+                        $return = {
+                            'value'     =>  int(rand(100)),
+                            'trend'     =>  $trends[$selector]
+                        };
+                        $return  =  $return;
+                    }
+                    $return;
+                };
+
+                # Convert Date of birth to digitally calculable date
+                my ($dob_year,$dob_month,$dob_day) = 
+                    split(/\-/,$patient->{resource}->{'birthDate'});
+
+                my $dob_obj = DateTime->new(
+                    year       => $dob_year,
+                    month      => $dob_month,
+                    day        => $dob_day,
+                    time_zone  => 'Europe/London',
+                );
+
+                $patient->{resource}->{'birthDate'} =
+                    $dob_obj->epoch();
+
                 push @commit_list,$patient;
             }
-            $global->{patient_db}->{entry} = \@commit_list;
 
-            $global->{patient_db} = $patient_list;
+            foreach my $customer (@commit_list) {
+                my $name        =   $customer->{resource}->{name};
+                my $identifier  =   $customer->{_uuid};
+
+                # Refactor the structure of the datasource, this would be a 
+                # call to a specialist service in DITO Service_Client_UserDB
+                my $datablock = {
+                    'name'      =>  $name,
+                    'id'        =>  $identifier,
+                    'birthDate' =>  $customer->{resource}->{'birthDate'},
+                    'gender'    =>  $customer->{resource}->{'gender'},
+                    'identifier'=>  $customer->{resource}->{'identifier'},
+                    'location'  =>  'Bedroom',
+                    'assessment'=>  $customer->{'assessment'},
+                    'nhsnumber' =>  $customer->{resource}->{'nhsnumber'}
+                };
+
+                $global->{patient_db}->{"$identifier"} = $datablock;
+            }
+
         },
         'process_request'   =>  sub {
             my ( $kernel, $heap, $session, $sender, $packet ) =
@@ -767,102 +929,148 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
             $kernel->yield(lc($packet->{request}->method),$packet);
         },
-        'boop' => sub {
-            warn "GOT IT";
-        },
         'get'               =>  sub {
             my ( $kernel, $heap, $session, $packet ) =
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
             my $response        =   $packet->{response};
             my $request         =   $packet->{request};
+            my $params          =   $packet->{params};
 
             $response->code(200);
             $response->header('Content-Type' => 'application/json');
 
-            # Build a list of patients
-            my $return = [];
-            my $mode = $request->uri->query_param('function');
-
-            foreach my $customer (@{$global->{patient_db}->{entry}}) {
-                my $name = $customer->{resource}->{name};
-                my $identifier = $customer->{_uuid};
-
-                my $datablock = { name => $name, id => $identifier };
-
-                if ($mode && $mode eq 'full') {
-                    $datablock->{'birthDate'}   =
-                        $customer->{resource}->{'birthDate'};
-                    $datablock->{'gender'}      =
-                        $customer->{resource}->{'gender'};
-                    $datablock->{'identifier'}  =
-                        $customer->{resource}->{'identifier'};
-                    $datablock->{'location'}    =
-                        'Bedroom';
-
-                    $datablock->{'assessment'} = {};
-
-                    # TODO Go make a query to ehrbase for all the latest versions
-                    # of these
-                    $datablock->{'assessment'}->{denwis}->{value}   =   do {
-                        my $return;
-                        if (int(rand(2)) == 1) {
-                            my @trends = qw(raising decreasing first);
-                            my $selector = int(rand(scalar(@trends)));
-                            $return = {
-                                'value'     =>  int(rand(100)),
-                                'trend'     =>  $trends[$selector]
-                            };
-                            $return  =  $return;
-                        }
-                        $return;
-                    };
-
-                    $datablock->{'assessment'}->{covid}->{value}   =   do {
-                        my $return;
-                        if (int(rand(2)) == 1) {
-                            $return->{suspected_covid_status} =
-                                 'Suspected Symptoms (Assessed but no test)';
-                            $return->{date_isolation_due_to_end} =
-                                '2020-11-10T22:39:31.826Z';
-                            $return->{covid_test_request} =  {
-                                'date'  =>  '2020-11-10T22:39:31.826Z',
-                                'value' =>  'EXAMPLE TEXT'
-                            }
-                        }
-                        $return;
-                    };
-
-                    $datablock->{'assessment'}->{sepsis}->{value}   =   do {
-                        my $return;
-                        if (int(rand(2)) == 1) {
-                            my @flags = qw(red amber grey);
-                            my $selector = int(rand(scalar(@flags)));
-                            $return->{flag} = $flags[$selector];
-                        }
-                        $return;
-                    };
-
-                    $datablock->{'assessment'}->{news2}->{value}   =   do {
-                        my $return;
-                        if (int(rand(2)) == 1) {
-                            my @trends = qw(raising decreasing first);
-                            my $selector = int(rand(scalar(@trends)));
-                            $return = {
-                                'value'     =>  int(rand(100)),
-                                'trend'     =>  $trends[$selector]
-                            };
-                            $return  =  $return;
-                        }
-                        $return;
-                    };
+            # Build a list of queries
+            my $return_spec     =   { 
+                filter      =>  {
+                    key     =>  $params->{'filter_key'},
+                    value   =>  $params->{'filter_value'}
+                },
+                search      =>  {
+                    key     =>  $params->{'search_key'},
+                    value   =>  $params->{'search_value'}
+                },
+                sort        =>  {
+                    key     =>  $params->{'sort_key'},
+                    value   =>  $params->{'sort_value'}
+                },
+                pagination  =>  {
+                    spec    =>  $params->{'pagination_spec'},
+                    index   =>  $params->{'pagination_index'}
                 }
-                push @{$return},$datablock;
+            };
+
+            # Add in fast checks
+            foreach my $key (keys %{$return_spec}) {
+                my $valid_check = do {
+                    my $values_valid = 1;
+                    foreach my $subkey (keys %{$return_spec->{$key}}) {
+                        if (!defined $return_spec->{$key}->{$subkey}) {
+                            $values_valid = 0;
+                        }
+                        last;
+                    }
+                    $values_valid
+                };
+                $return_spec->{$key}->{enabled} = $valid_check;
             }
 
-            $response->content(encode_json($return));
+            # Call the search function and apply our filter sets
+            # This should really be a post and the search handler should
+            # simply take a reference to what to search upon (load offsetting)
+            my $result = $kernel->call(
+                $session->ID,
+                'search',
+                $return_spec 
+            );
+
+            $response->content(encode_json($result));
 
             $kernel->yield('finalize', $response);
+        },
+        'search'            =>  sub {
+            my ( $kernel, $heap, $session, $search_spec ) =
+                @_[ KERNEL, HEAP, SESSION, ARG0 ];
+
+            my $search_result   =   [];
+            my $search_db       =   $global->{patient_db};
+
+            foreach my $userid (keys %{$search_db}) {
+                # Filter section
+                if ($search_spec->{filter}->{enabled} == 1) {
+                    my $search_key      =
+                        $search_spec->{filter}->{key};
+                    my $search_value    =
+                        $search_spec->{filter}->{value};
+
+                    my $search_db_ref   =
+                        $search_db->{$userid}->{'assessment'};
+
+                    if (
+                        !defined $search_db_ref->{$search_key}
+                        ||
+                        !defined $search_db_ref->{$search_key}->{value}
+                        ||
+                        ($search_db_ref->{"$search_key"}->{value} ne $search_value)
+                    ) {
+                        next;
+                    }
+                }
+
+                # Search section
+                if ($search_spec->{search}->{enabled} == 1) {
+                    my $search_key      =
+                        $search_spec->{search}->{key};
+                    my $search_value    =
+                        $search_spec->{search}->{value};
+
+                    my $search_db_ref   =
+                        $search_db->{$userid};
+
+                    if (
+                        !defined $search_db_ref->{"$search_key"}
+                        ||
+                        ($search_db_ref->{"$search_key"} !~ m/\Q$search_value\E/i)
+                    ) {
+                        next;
+                    }
+                }
+
+                push @{$search_result},$search_db->{$userid};
+            }
+
+            # Sort section
+            if ($search_spec->{sort}->{enabled} == 1) {
+                # key = sepsis/news2/name/birthdate
+                # value = ASC/DESC
+                if ($search_spec->{sort}->{key} eq 'birthdate') {
+                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                        @{$search_result} = reverse sort {
+                            $a->{birthDate} cmp $b->{birthDate}
+                        } @{$search_result}
+                    }
+                    else {
+                        @{$search_result} = sort {
+                            $a->{birthDate} cmp $b->{birthDate}
+                        } @{$search_result}
+                    }
+                }
+                elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
+                    my $sort_key = $1;
+                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                        @{$search_result} = reverse sort {
+                            $a->{$sort_key}->{value} cmp $b->{$sort_key}->{value}
+                        } @{$search_result}
+                    }
+                    else {
+                        @{$search_result} = sort {
+                            ($a->{$sort_key}->{value} // 0) cmp ($b->{$sort_key}->{value} // 0)
+                        } @{$search_result}
+                    }
+                }
+            }
+
+            return $search_result;
         },
         'finalize'          =>  sub {
             my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
@@ -989,9 +1197,9 @@ my $service_httpd   =   POE::Session->create(
 
             # Generate or capture the UUID
             my $session_uuid        =
-                            $client_session->{uuid} || $uuid->to_string($uuid->create());
+                $client_session->{uuid} || $uuid->to_string($uuid->create());
             my $session_uuid_fqdn   =
-                            "session::$session_uuid";
+                "session::$session_uuid";
 
             # Create a session cookie expires => 'Wed, 03-Nov-2010 20:54:16 GMT' 
             # HACK TODO
@@ -1057,6 +1265,7 @@ my $service_httpd   =   POE::Session->create(
                     {
                         request     =>  $request,
                         response    =>  $response,
+                        params      =>  $params,
                         uuid        =>  $session_uuid,
                         dirwatch    =>  $dirmatch,
                         api_prefix  =>  $api_prefix
