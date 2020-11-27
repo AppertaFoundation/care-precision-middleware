@@ -1,0 +1,5 @@
+Pure UUID/GUID                          Compatability anchor (tt)                               Description
+ac026c7f-3c21-4f60-8e55-5e82f31bddaf    transmogrify(ac026c7f-3c21-4f60-8e55-5e82f31bddaf)      Author for entire composition
+f391950f-3f90-401c-adb7-1674ba47e425    transmogrify(f391950f-3f90-401c-adb7-1674ba47e425)      A datetime created on the render of the composition
+ef5ecf94-de58-4fbc-92c9-4309b208a9df    transmogrify(ef5ecf94-de58-4fbc-92c9-4309b208a9df)      The name of the healthcare provider submitting the composition
+3b3599c8-9f9c-47c0-8595-74f7d9006efb    transmogrify(3b3599c8-9f9c-47c0-8595-74f7d9006efb)      A random GUID/UUID added for reasons to speed up processesing on ehrbase

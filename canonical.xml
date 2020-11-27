@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <composition xmlns="http://schemas.openehr.org/v1" archetype_node_id="openEHR-EHR-COMPOSITION.encounter.v1">
     <name>
-        <value>Deterioriation assessment</value>
+        <value>Deterioration assessment</value>
     </name>
+    <uid xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="OBJECT_VERSION_ID">
+        <value>a6f9c861-3483-41b3-b759-50d2f6461b35::a81f47c6-a757-4e34-b644-3ccc62b4a01c::1</value>
+    </uid>
     <archetype_details>
         <archetype_id>
             <value>openEHR-EHR-COMPOSITION.encounter.v1</value>
@@ -34,14 +37,22 @@
         </defining_code>
     </category>
     <composer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PARTY_IDENTIFIED">
-        <name>[% transmogrify(ac026c7f-3c21-4f60-8e55-5e82f31bddaf) %]</name>
+        <external_ref>
+            <id xsi:type="GENERIC_ID">
+                <value>12342341</value>
+                <scheme>NMC</scheme>
+            </id>
+            <namespace>uk.org.nmc</namespace>
+            <type>ANY</type>
+        </external_ref>
+        <name>RN Joyce Brown</name>
     </composer>
     <context>
         <start_time>
-            <value>[% transmogrify(f391950f-3f90-401c-adb7-1674ba47e425) %]</value>
+            <value>2020-11-17T16:34:03.864Z</value>
         </start_time>
         <setting>
-            <value>nursing home</value>
+            <value>nursing home care</value>
             <defining_code>
                 <terminology_id>
                     <value>openehr</value>
@@ -52,15 +63,15 @@
         <health_care_facility>
             <external_ref>
                 <id xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GENERIC_ID">
-                    <value>9091</value>
-                    <scheme>HOSPITAL-NS</scheme>
+                    <value>12342341</value>
+                    <scheme>CQC</scheme>
                 </id>
-                <namespace>HOSPITAL-NS</namespace>
-                <type>PARTY</type>
+                <namespace>uk.org.cqc</namespace>
+                <type>ANY</type>
             </external_ref>
-            <name>[% transmogrify(ef5ecf94-de58-4fbc-92c9-4309b208a9df) %]</name>
+            <name>Glen Carse Care Home</name>
         </health_care_facility>
-</context>
+    </context>
     <content xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="SECTION" archetype_node_id="openEHR-EHR-SECTION.adhoc.v1">
         <name>
             <value>Situation</value>
@@ -76,7 +87,7 @@
                 <value>Story/History</value>
             </name>
             <uid xsi:type="HIER_OBJECT_ID">
-                <value>[% transmogrify(3b3599c8-9f9c-47c0-8595-74f7d9006efb) %]</value>
+                <value>7492bd8c-44d8-4b67-8ba9-daa8be6b1e21</value>
             </uid>
             <archetype_details>
                 <archetype_id>
@@ -482,6 +493,40 @@
                 <code_string>UTF-8</code_string>
             </encoding>
             <subject xsi:type="PARTY_SELF"/>
+            <other_participations>
+                <function>
+                    <value>performer</value>
+                </function>
+                <performer xsi:type="PARTY_IDENTIFIED">
+                    <name>Nurse Bailey</name>
+                </performer>
+                <mode>
+                    <value>not specified</value>
+                    <defining_code>
+                        <terminology_id>
+                            <value>openehr</value>
+                        </terminology_id>
+                        <code_string>193</code_string>
+                    </defining_code>
+                </mode>
+            </other_participations>
+            <other_participations>
+                <function>
+                    <value>requester</value>
+                </function>
+                <performer xsi:type="PARTY_IDENTIFIED">
+                    <name>Dr. Stiles</name>
+                </performer>
+                <mode>
+                    <value>not specified</value>
+                    <defining_code>
+                        <terminology_id>
+                            <value>openehr</value>
+                        </terminology_id>
+                        <code_string>193</code_string>
+                    </defining_code>
+                </mode>
+            </other_participations>
             <data archetype_node_id="at0001">
                 <name>
                     <value>Event Series</value>

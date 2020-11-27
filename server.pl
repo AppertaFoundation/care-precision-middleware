@@ -36,6 +36,7 @@ use File::Slurp;
 use Storable qw( dclone );
 use Data::Search;
 use DateTime;
+use XML::TreeBuilder;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -111,7 +112,6 @@ my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
 
 # Create our own session to receive events from SimpleHTTP
 # This is really the central session and will deal with
-
 # events from lots of different modules
 my $service_main = POE::Session->create(
     inline_states => {
@@ -353,19 +353,25 @@ my $handler__cdr = POE::Session->create(
             if (
                 ($payload) 
                 && 
-                (ref($payload) eq 'HASH')
+                (ref($payload) eq 'ARRAY')
                 &&
-                ($payload->{templateid})
+                (scalar(@{$payload}) == 2)
+                &&
+                (ref($payload->[0]) eq 'HASH')
+                &&
+                (ref($payload->[1]) eq 'HASH')
+                &&
+                ($payload->[0]->{templateid})
              )  {
                 my $request = GET($ehrbase.'/ehrbase/rest/openehr/v1/definition/template/adl1.4');
                 $request->header('Accept' => 'application/json');
 
                 $kernel->post(
-                    'webclient',                # posts to the 'ua' alias
-                    'request',                  # posts to ua's 'request' state
-                    'create_new_composition',   # which of our states will receive the response
-                    $request,                   # an HTTP::Request object,
-                    $packet
+                    'webclient',                    # posts to the 'ua' alias
+                    'request',                      # posts to ua's 'request' state
+                    'create_new_composition',       # which of our states will receive the response
+                    $request,                       # an HTTP::Request object,
+                    [$payload,$packet->{response}]  # a tag or object to pass things like a stash
                 );
             }
             else {
@@ -376,299 +382,248 @@ my $handler__cdr = POE::Session->create(
             }
         },
         'create_new_composition'   =>  sub {
-            my ($kernel,$heap,$request_packet, $response_packet) = @_[KERNEL, HEAP, ARG0, ARG1];
+            my ($kernel,$heap,$request_obj,$response_obj) = @_[KERNEL, HEAP, ARG0, ARG1];
 
-            my $packet                  =   $request_packet->[1];
-            my $ehrbase_request         =   $request_packet->[0];
-            my $ehrbase_response        =   $response_packet->[0];
+            # Break out various bits and peices from the passed objects
+            my $ehrbase_response    =   $response_obj->[0];
+            my $frontend_request    =   $request_obj->[0];
+            my $passed_objects      =   $request_obj->[1]->[0];
+            my $frontend_response   =   $request_obj->[1]->[1];
 
-            my $frontend_request        =   $packet->{request};
-            my $frontend_response       =   $packet->{response};
+            # Check the request templateid is present within the template list on ehrbase
+            my $valid_template_test =   do  {
+                my $templates_accessible    =   decode_json($ehrbase_response->decoded_content());
+                my $template_requested      =   $passed_objects->[0]->{templateid};
+                my $template_check_result   =   0;
 
-            # Check the request templateid is present within the 
-            my $templates_accessible    =   decode_json($ehrbase_response->decoded_content());
-            my $template_requested      =   decode_json($frontend_request->decoded_content());
-
-            if (
-                (!$templates_accessible)
-                ||
-                (ref($templates_accessible) ne 'ARRAY')
-                ||
-                (!$templates_accessible->[0])
-                ||
-                (!$templates_accessible->[0]->{template_id})
-            )
-            {
-                $frontend_response->content('Template not found');
-                $frontend_response->code(404);
-            }
-            else {
-                my $validated_template;
                 foreach my $availible_template (@{$templates_accessible}) {
                     if (
-                        ($availible_template->{template_id} eq $template_requested->{'templateid'})
+                        ($availible_template->{template_id} eq $template_requested)
                     )
                     {
-                        $validated_template = $availible_template;
+                        $template_check_result = 1;
                         last;
                     }
                 }
+                $template_check_result
+            };
 
-                if (!$validated_template) {
-                    $frontend_response->content('Template not found');
-                    $frontend_response->code(404);
-                    $kernel->yield('finalize', $frontend_response);
-                    return;
-                }
- 
-                my $composition_id = $uuid->to_string($uuid->create());
-                $global->{compose}->{$composition_id} = {
-                    template_xml    =>  join('',read_file('composition.xml')),
-                    template        =>  $validated_template
-                };
-
-                # POST  /ehrbase/rest/openehr/v1/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition HTTP/1.1\r\n
-                # POST http://192.168.101.3:8002/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition
-
-                # Accept: application/json\r\n
-                # Content-Type: application/xml\r\n
-                # Prefer: representation=minimal\r\n
-                # Authorization: Basic ZWhyYmFzZS11c2VyOlN1cGVyU2VjcmV0UGFzc3dvcmQ=\r\n
-                # User-Agent: PostmanRuntime/7.26.5\r\n
-                # Postman-Token: 786a2ae6-4055-4d29-83a2-cdb599dcb456\r\n
-                # Host: 192.168.101.3:8003\r\n
-                # Accept-Encoding: gzip, deflate, br\r\n
-                # Connection: keep-alive\r\n
-                # Content-Length: 18408\r\n
-
-                use LWP;
-                use LWP::UserAgent;
-                my $uri = "$ehrbase/ehrbase/rest/openehr/v1/ehr/acf02fe4-29a7-4010-91ae-9e16705bf9d0/composition";
-                my $req = HTTP::Request->new( 'POST', $uri );
-                $req->header( 'Content-Type' => 'application/xml' );
-                $req->header( 'Host' => '192.168.101.3:8003' );
-                $req->content( $global->{compose}->{$composition_id}->{template_xml} );
-
-                warn $req->as_string;
-
-                my $lwp = LWP::UserAgent->new;
-                my $response = $lwp->request( $req );
-
-                $frontend_response->code($response->code);
+            # If an invalid template or JSON then return that now
+            if (
+                $valid_template_test == 0
+                || !$passed_objects->[1] 
+                || ref($passed_objects->[1]) ne 'HASH'
+            ) {
+                my $response = $ehrbase_response->{response};
+                $response->content("Invalid request");
+                $response->code(400);
+                $kernel->yield('finalize', $frontend_response);
+                return;
             }
 
+            # We have a valid templateid request lets proceed with creating a composition!
+
+            # Create a place to put everything we need for ease and clarity
+            my $composition_obj =   {
+                uuid    =>  $uuid->to_string($uuid->create()),
+                base    =>  join('',read_file('composition.xml')),
+                input   =>  $passed_objects->[1]
+            };
+
+            my $xml_transformation = sub {
+                my $spec = $_[0] or die "No spec passed";
+
+                # A place to stash our return
+                my $return = {};
+
+                # Process the XML file and get back something that can be adjusted
+                my $tree = XML::TreeBuilder->new({ 'NoExpand' => 0, 'ErrorContext' => 0 });
+
+                # Read in the initial base file
+                $tree->parse($spec->{base});
+
+                # Step 1 - Validate the input json
+                $return->{error} = 0;
+
+                # Step 1.1 - json.header
+                my $test_header = do {
+                    my $test_result = 1;
+                    my $header;
+
+                    # Validate the header is present
+                    if (
+                        defined $spec->{input}->{header}
+                        && ref($spec->{input}->{header}) eq 'HASH'
+                    )   {
+                        $header = $spec->{input}->{header};
+                    }
+                    else {
+                        $test_result = 0;
+                    }
+
+                    # Validate all fields are what we expect and present
+                    if (
+                        $test_result != 1
+                        || !defined $header->{healthcare_facility}
+                        || ref($header->{healthcare_facility})
+                        || !defined $header->{composer}
+                        || ref($header->{composer}) ne 'HASH'
+                        || !defined $header->{composer}->{name}
+                        || ref($header->{composer}->{name})
+                        || !defined $header->{composer}->{id}
+                        || ref($header->{composer}->{id}) ne 'HASH'
+                        || !defined $header->{composer}->{id}->{type}
+                        || ref($header->{composer}->{id}->{type})
+                        || !defined $header->{composer}->{id}->{id}
+                        || ref($header->{composer}->{id}->{id})
+                        || !defined $header->{composer}->{id}->{namespace}
+                        || ref($header->{composer}->{id}->{namespaced})
+                    )
+                    { 
+                        $return->{error_header} = "Failed validation json block 'header'";
+                        $return->{error}++;
+                        $test_result = 0; 
+                    }
+
+
+                    # Return the test result
+                    $test_result
+                };
+
+                # Step 1.2 - json.situation
+                my $test_situation   = do {
+                    # Inherit the previous test result
+                    my $test_result = 1;
+                    my $object;
+
+                    # Validate the header is present
+                    if (
+                        defined $spec->{input}->{situation}
+                        && ref($spec->{input}->{situation}) eq 'HASH'
+                    )   {
+                        $object = $spec->{input}->{situation};
+                    }
+                    else {
+                        $test_result = 0;
+                    }
+
+                    # Validate all fields are what we expect and present
+                    if (
+                        $test_result != 1
+                        || !defined $object->{uuid}
+                        || ref($object->{uuid})
+                        || !defined $object->{notes}
+                        || ref($object->{notes})
+                        || !defined $object->{soft_signs}
+                        || ref($object->{soft_signs}) ne 'ARRAY'
+                    )
+                    { 
+                        $return->{error_situation} = "Failed validation json block 'situation'";
+                        $return->{error} = 1;
+                        $test_result = 0;
+                    }
+
+                    # Return the test result
+                    $test_result
+                };
+
+                # Step 1.3 - json.background
+                my $test_background   = do {
+                    # Inherit the previous test result
+                    my $test_result = 1;
+                    my $object;
+
+                    # Validate the header is present
+                    if (
+                        defined $spec->{input}->{background}
+                        && ref($spec->{input}->{background}) eq 'HASH'
+                    )   {
+                        $object = $spec->{input}->{background};
+                    }
+                    else {
+                        $return->{error_background} = "Failed validation json block 'background'";
+                        $return->{error} = 1;
+                        $test_result = 0;
+                    }
+
+                    # Validate all fields are what we expect and present
+                    if (
+                        $test_result != 1
+                    )
+                    { $test_result = 0; }
+
+                    # Return the test result
+                    $test_result
+                };
+
+                # Step 1.4 - json.denwis
+                my $test_denwis   = do {
+                    # Inherit the previous test result
+                    my $test_result = 1;
+
+                    if ($test_result == 1) { 
+                        my $object;
+
+                        # Validate the header is present
+                        if (
+                            defined $spec->{input}->{denwis}
+                        )   {
+                            $object = $spec->{input}->{denwis};
+                        }
+                        else {
+                            $test_result = 1;
+                        }
+
+                        # Validate all fields are what we expect and present
+                        # Each element in the denwis hash should be an array or a hash
+                        foreach my $denwis_key (keys %{$object}) {
+                            # There is only three types this can be,
+                            # a string/scalar a hash or an arrayofhashes
+                            my $type = ref($object->{$denwis_key});
+                            if (!$type) { $type = 'STRING' }
+                            elsif ($type eq 'ARRAY') { $type = 'AOH' }
+                            else { $type = 'HASH' }
+
+                            if ($type eq 'STRING')  {
+                                say "[$type] $denwis_key = ".$object->{$denwis_key};
+                            }
+                            elsif ($type eq 'HASH') {
+                                my @info;
+                                foreach my $subkey (keys %{$object->{$denwis_key}}) {
+                                    push @info,join(':',$subkey,$object->{$denwis_key}->{$subkey});
+                                }
+                                my $infoblock = join(',',@info);
+                                say "[$type] $denwis_key = [$infoblock]";
+                            }
+                            else {
+                                my $element_count = scalar(@{$object->{$denwis_key}});
+                                say "[$type] $denwis_key = Records in set: $element_count";
+                            }
+
+                            #warn Dumper($object->{$denwis_key});
+                        }
+                    }
+
+                    # Return the test result
+                    $test_result
+                };
+
+                # Add the test result to the return
+                $return->{test} = $test_situation + $test_denwis + $test_header;
+
+                # Return the return :-)
+                $return
+            };
+
+            $composition_obj->{output}  =   $xml_transformation->($composition_obj);
+
+            # Finally return the XML file so we can see the results
+            $frontend_response->header('Content-Type' => 'application/xml');
+            $frontend_response->content($composition_obj->{base});
+            $frontend_response->code(201);
             $kernel->yield('finalize', $frontend_response);
         },
 
-        'finalize'          =>  sub {
-            my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
-            $kernel->post( 'HTTPD', 'DONE', $response );
-        },
-        '_default'          =>  sub {
-            my ($kernel,$heap,$event,$args) = @_[KERNEL,HEAP,ARG0,ARG1];
-            $kernel->post('service::main','unimplemented',$heap->{myid},$event,$args);
-        }
-    }
-);
-
-my $handler__cdr_compose = POE::Session->create(
-    inline_states => {
-        '_start'            =>  sub {
-            my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
-
-            my $handler     =   "$api_prefix/cdr/compose";
-            $heap->{myid}   =   "handler::$handler";
-
-            $kernel->alias_set($heap->{myid});
-            $kernel->post('service::main','register_handler',$heap->{myid});
-        },
-        'process_request'   =>  sub {
-            my ( $kernel, $heap, $session, $sender, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, SENDER, ARG0 ];
-
-            $kernel->yield(lc($packet->{request}->method),$packet);
-        },
-        'get'               =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-
-            my $response    =   $packet->{response};
-            my $request     =   $packet->{request};
-            my $method      =   lc($request->method);
-            my $params      =   $packet->{params};
-
-            if (!$params->{'compositionid'})
-            {
-                $response->code( 400 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('compositionid or function missing');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-
-            my $composition_id = $params->{'compositionid'};
-            $packet->{composition_id}   =   $composition_id;
-
-            if (!$global->{compose}->{$composition_id}) {
-                $response->code( 404 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('Compositionid not found');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-            else {
-                my $function = $params->{'function'} // 'default';
-                my $handler = join('_','func',$method,$function);
-                $kernel->yield($handler, $packet);
-            }
-        },
-        'put'               =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-
-            my $response    =   $packet->{response};
-            my $request     =   $packet->{request};
-            my $params      =   $packet->{params};
-            my $method      =   lc($request->method);
-
-            if (!$params->{'compositionid'})
-            {
-                $response->code( 400 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('compositionid or function missing');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-
-            my $composition_id = $params->{'compositionid'};
-            $packet->{composition_id}   =   $composition_id;
-
-            if (!$global->{compose}->{$composition_id}) {
-                $response->code( 404 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('Compositionid not found');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-            else {
-                my $function = $params->{'function'} // 'default';
-                my $handler = join('_','func',$method,$function);
-                $kernel->yield($handler, $packet);
-            }
-        },
-        'post'              =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-
-            my $response    =   $packet->{response};
-            my $request     =   $packet->{request};
-            my $params      =   $packet->{params};
-            my $method      =   lc($request->method);
-
-            if (!$params->{'compositionid'})
-            {
-                $response->code( 400 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('compositionid or function missing');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-
-            my $composition_id = $params->{'compositionid'};
-            $packet->{composition_id}   =   $composition_id;
-
-            if (!$global->{compose}->{$composition_id}) {
-                $response->code( 404 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('Compositionid not found');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-            else {
-                my $function = $params->{'function'} // 'default';
-                my $handler = join('_','func',$method,$function);
-                $kernel->yield($handler, $packet);
-            }
-        },
-        'func_post_default'    =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-            
-            my $response        =   $packet->{response};
-            my $request         =   $packet->{request};
-            my $method          =   lc($request->method);
-
-            my $composition_id  =   $packet->{composition_id};
-
-            # Reset to the default template of blank
-            $global->{compose}->{$composition_id} = {};
-
-            $response->code( 201 );
-            $response->header('Content-Type' => 'plain/text');
-            $response->content('OK');
-
-            $kernel->yield('finalize', $response);
-        },
-        'func_put_default'    =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-            
-            my $response        =   $packet->{response};
-            my $request         =   $packet->{request};
-            my $method          =   lc($request->method);
-
-            my $composition_id  =   $packet->{composition_id};
-
-            # Decode the JSON we was given to check its validity
-            my $compilation_decoded;
-            try {
-                my $compilation_packet = $request->content;
-                $compilation_decoded = decode_json($compilation_packet);
-            } catch {
-                $compilation_decoded = undef;
-            };
-
-            if (!$compilation_decoded) {
-                $response->code( 400 );
-                $response->header('Content-Type' => 'plain/text');
-                $response->content('invalid json');
-                $kernel->yield('finalize', $response);
-                return;
-            }
-
-            # Reset to the default template of blank
-            $global->{compose}->{$composition_id} = $compilation_decoded;
-
-            # Dump the document
-            say STDERR "Stored, composition";
-            say STDERR Dumper($compilation_decoded);
-            say STDERR "End of composition";
-
-            # Tell the client it worked
-            $response->code(200);
-            $response->header('Content-Type' => 'plain/text');
-            $response->content('OK');
-
-            $kernel->yield('finalize', $response);
-        },
-        'func_get_default'    =>  sub {
-            my ( $kernel, $heap, $session, $packet ) =
-                @_[ KERNEL, HEAP, SESSION, ARG0 ];
-            
-            my $response        =   $packet->{response};
-            my $composition_id  =   $packet->{composition_id};
-
-            # Reset to the default template of blank
-            my $encoded_content = 
-                encode_json($global->{compose}->{$composition_id});
-
-            # Tell the client it worked
-            $response->code(200);
-            $response->header('Content-Type' => 'json/application');
-            $response->content($encoded_content);
-
-            $kernel->yield('finalize', $response);
-        },
         'finalize'          =>  sub {
             my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
             $kernel->post( 'HTTPD', 'DONE', $response );
@@ -866,7 +821,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     if (int(rand(2)) == 1) {
                         my @flags = qw(red amber grey);
                         my $selector = int(rand(scalar(@flags)));
-                        $return = $flags[$selector];
+                        $return = { value => $flags[$selector] };
                     }
                     $return;
                 };
@@ -896,6 +851,9 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     time_zone  => 'Europe/London',
                 );
 
+                $patient->{resource}->{'birthDateAsString'} =
+                        join('-',$dob_year,$dob_month,$dob_day);
+
                 $patient->{resource}->{'birthDate'} =
                     $dob_obj->epoch();
 
@@ -909,14 +867,15 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # Refactor the structure of the datasource, this would be a 
                 # call to a specialist service in DITO Service_Client_UserDB
                 my $datablock = {
-                    'name'      =>  $name,
-                    'id'        =>  $identifier,
-                    'birthDate' =>  $customer->{resource}->{'birthDate'},
-                    'gender'    =>  $customer->{resource}->{'gender'},
-                    'identifier'=>  $customer->{resource}->{'identifier'},
-                    'location'  =>  'Bedroom',
-                    'assessment'=>  $customer->{'assessment'},
-                    'nhsnumber' =>  $customer->{resource}->{'nhsnumber'}
+                    'name'              =>  $name,
+                    'id'                =>  $identifier,
+                    'birthDate'         =>  $customer->{resource}->{'birthDate'},
+                    'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+                    'gender'            =>  $customer->{resource}->{'gender'},
+                    'identifier'        =>  $customer->{resource}->{'identifier'},
+                    'location'          =>  'Bedroom',
+                    'assessment'        =>  $customer->{'assessment'},
+                    'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
                 };
 
                 $global->{patient_db}->{"$identifier"} = $datablock;
@@ -955,8 +914,8 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     value   =>  $params->{'sort_value'}
                 },
                 pagination  =>  {
-                    spec    =>  $params->{'pagination_spec'},
-                    index   =>  $params->{'pagination_index'}
+                    key     =>  $params->{'pagination_key'},
+                    value   =>  $params->{'pagination_value'}
                 }
             };
 
@@ -1028,6 +987,57 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         $search_db->{$userid};
 
                     if (
+                        $search_key eq 'combisearch'
+                    )
+                    {
+                        my $search_match = 0;
+
+                        if (
+                            defined $search_db_ref->{nhsnumber}
+                            &&
+                            $search_db_ref->{nhsnumber} =~ m/\Q$search_value\E/i
+                        )
+                        {
+                            $search_match = 1;
+                        }
+                        elsif (
+                            defined $search_db_ref->{name}
+                            &&
+                            $search_db_ref->{name} =~ m/\Q$search_value\E/i
+                        )
+                        {
+                            $search_match = 1;
+                        }
+                        elsif (
+                            defined $search_db_ref->{location}
+                            &&
+                            $search_db_ref->{location} =~ m/\Q$search_value\E/i
+                        )
+                        {
+                            $search_match = 1;
+                        }
+                        elsif (
+                            defined $search_db_ref->{gender}
+                            &&
+                            $search_db_ref->{gender} =~ m/\Q$search_value\E/i
+                        )
+                        {
+                            $search_match = 1;
+                        }
+                        elsif (
+                            defined $search_db_ref->{birthdate}
+                            &&
+                            $search_db_ref->{birthdate} =~ m/\Q$search_value\E/i
+                        )
+                        {
+                            $search_match = 1;
+                        }
+
+                        if ($search_match == 0) { 
+                            next; 
+                        }
+                    }
+                    elsif (
                         !defined $search_db_ref->{"$search_key"}
                         ||
                         ($search_db_ref->{"$search_key"} !~ m/\Q$search_value\E/i)
@@ -1059,17 +1069,66 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     my $sort_key = $1;
                     if ($search_spec->{sort}->{key} =~ m/ASC/i) {
                         @{$search_result} = reverse sort {
-                            $a->{$sort_key}->{value} cmp $b->{$sort_key}->{value}
+                            $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
                         } @{$search_result}
                     }
                     else {
                         @{$search_result} = sort {
-                            ($a->{$sort_key}->{value} // 0) cmp ($b->{$sort_key}->{value} // 0)
+                            ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
                         } @{$search_result}
                     }
                 }
             }
 
+            # Pagination section
+            # It's faster to redo the search and just send back chunks of what to send back
+            # if we wanted to do this, we should just shove the details into the users
+            # session and slice sections out based on the value of the page wanted
+            if ($search_spec->{pagination}->{enabled} == 1) {
+                # key = page size
+                # value = page to show
+
+                my $page_size       =   $search_spec->{pagination}->{key};
+                my $page_index      =   $search_spec->{pagination}->{value};
+                my $page_validated  =   1;
+
+                if (
+                    $page_size !~ m/^\d+$/
+                    ||
+                    $page_size < 0
+                ) {
+                    $page_validated = 0;
+                }
+                elsif (
+                    $page_index !~ m/^\d+$/
+                    ||
+                    $page_size < 0
+                ) {
+                    $page_validated = 0;
+                }
+
+                my @chunks;
+                if ($page_validated == 1) {
+                    while (my @nibble = splice(@{$search_result},0,$page_size)) {
+                        push @chunks,[@nibble];
+                    }
+                }
+
+                if (
+                    scalar(@chunks) >= $page_index
+                    &&
+                    scalar(@chunks) > 0
+                    &&
+                    defined $chunks[$page_index+1]
+                ) {
+                    return $chunks[$page_index+1];
+                }
+                else {
+                    return [];
+                }
+            }
+
+            # If no pagination just return whatever survived the run
             return $search_result;
         },
         'finalize'          =>  sub {
