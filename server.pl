@@ -442,177 +442,103 @@ my $handler__cdr = POE::Session->create(
                 # Read in the initial base file
                 $tree->parse($spec->{base});
 
-                # Step 1 - Validate the input json
+                # Step 1 - Validate the input json - Should be a better test!
+                # possible use knowledge of structure to recurse into any structure
                 $return->{error} = 0;
 
-                # Step 1.1 - json.header
-                my $test_header = do {
-                    my $test_result = 1;
-                    my $header;
+                # Create a function in scalar for easier recursion
+                my $recursive_structure_test = sub { warn "You should never see this" };
+                $recursive_structure_test = sub {
+                    # Every final leaf in this structure should end eiter in
+                    # a single string or a hash with a set of strings with a key
+                    # beginning with |
+                    my ($object_reference)      =
+                        @_;
+                    my $object_type             =
+                        ref($object_reference);
 
-                    # Validate the header is present
-                    if (
-                        defined $spec->{input}->{header}
-                        && ref($spec->{input}->{header}) eq 'HASH'
-                    )   {
-                        $header = $spec->{input}->{header};
-                    }
-                    else {
-                        $test_result = 0;
-                    }
+                    my $valid_structure = 0;
 
-                    # Validate all fields are what we expect and present
-                    if (
-                        $test_result != 1
-                        || !defined $header->{healthcare_facility}
-                        || ref($header->{healthcare_facility})
-                        || !defined $header->{composer}
-                        || ref($header->{composer}) ne 'HASH'
-                        || !defined $header->{composer}->{name}
-                        || ref($header->{composer}->{name})
-                        || !defined $header->{composer}->{id}
-                        || ref($header->{composer}->{id}) ne 'HASH'
-                        || !defined $header->{composer}->{id}->{type}
-                        || ref($header->{composer}->{id}->{type})
-                        || !defined $header->{composer}->{id}->{id}
-                        || ref($header->{composer}->{id}->{id})
-                        || !defined $header->{composer}->{id}->{namespace}
-                        || ref($header->{composer}->{id}->{namespaced})
-                    )
-                    { 
-                        $return->{error_header} = "Failed validation json block 'header'";
-                        $return->{error}++;
-                        $test_result = 0; 
-                    }
-
-
-                    # Return the test result
-                    $test_result
-                };
-
-                # Step 1.2 - json.situation
-                my $test_situation   = do {
-                    # Inherit the previous test result
-                    my $test_result = 1;
-                    my $object;
-
-                    # Validate the header is present
-                    if (
-                        defined $spec->{input}->{situation}
-                        && ref($spec->{input}->{situation}) eq 'HASH'
-                    )   {
-                        $object = $spec->{input}->{situation};
-                    }
-                    else {
-                        $test_result = 0;
-                    }
-
-                    # Validate all fields are what we expect and present
-                    if (
-                        $test_result != 1
-                        || !defined $object->{uuid}
-                        || ref($object->{uuid})
-                        || !defined $object->{notes}
-                        || ref($object->{notes})
-                        || !defined $object->{soft_signs}
-                        || ref($object->{soft_signs}) ne 'ARRAY'
-                    )
-                    { 
-                        $return->{error_situation} = "Failed validation json block 'situation'";
-                        $return->{error} = 1;
-                        $test_result = 0;
-                    }
-
-                    # Return the test result
-                    $test_result
-                };
-
-                # Step 1.3 - json.background
-                my $test_background   = do {
-                    # Inherit the previous test result
-                    my $test_result = 1;
-                    my $object;
-
-                    # Validate the header is present
-                    if (
-                        defined $spec->{input}->{background}
-                        && ref($spec->{input}->{background}) eq 'HASH'
-                    )   {
-                        $object = $spec->{input}->{background};
-                    }
-                    else {
-                        $return->{error_background} = "Failed validation json block 'background'";
-                        $return->{error} = 1;
-                        $test_result = 0;
-                    }
-
-                    # Validate all fields are what we expect and present
-                    if (
-                        $test_result != 1
-                    )
-                    { $test_result = 0; }
-
-                    # Return the test result
-                    $test_result
-                };
-
-                # Step 1.4 - json.denwis
-                my $test_denwis   = do {
-                    # Inherit the previous test result
-                    my $test_result = 1;
-
-                    if ($test_result == 1) { 
-                        my $object;
-
-                        # Validate the header is present
-                        if (
-                            defined $spec->{input}->{denwis}
-                        )   {
-                            $object = $spec->{input}->{denwis};
+                    if ($object_type eq 'ARRAY') {
+                        foreach my $array_child (@{$object_reference})   {
+                            # There are no arrays that do not end in a hash leaf
+                            # so all children here (if any) have to be hashes
+                            $valid_structure = 
+                                $recursive_structure_test->($array_child);
                         }
-                        else {
-                            $test_result = 1;
-                        }
-
-                        # Validate all fields are what we expect and present
-                        # Each element in the denwis hash should be an array or a hash
-                        foreach my $denwis_key (keys %{$object}) {
-                            # There is only three types this can be,
-                            # a string/scalar a hash or an arrayofhashes
-                            my $type = ref($object->{$denwis_key});
-                            if (!$type) { $type = 'STRING' }
-                            elsif ($type eq 'ARRAY') { $type = 'AOH' }
-                            else { $type = 'HASH' }
-
-                            if ($type eq 'STRING')  {
-                                say "[$type] $denwis_key = ".$object->{$denwis_key};
-                            }
-                            elsif ($type eq 'HASH') {
-                                my @info;
-                                foreach my $subkey (keys %{$object->{$denwis_key}}) {
-                                    push @info,join(':',$subkey,$object->{$denwis_key}->{$subkey});
-                                }
-                                my $infoblock = join(',',@info);
-                                say "[$type] $denwis_key = [$infoblock]";
+                    }
+                    elsif ($object_type eq 'HASH') {
+                        my $invalid_leaf_string = 0;
+                        my $node_type           = 'leaf';
+                        foreach my $hash_child (keys %{$object_reference})   {
+                            if (ref($object_reference->{$hash_child})) {
+                                $node_type          =
+                                    'set';
+                                $valid_structure    += 
+                                    $recursive_structure_test->($object_reference->{$hash_child});
                             }
                             else {
-                                my $element_count = scalar(@{$object->{$denwis_key}});
-                                say "[$type] $denwis_key = Records in set: $element_count";
+                                if ($object_reference->{$hash_child} !~ m#^|#) {
+                                    $invalid_leaf_string++;
+                                }
                             }
-
-                            #warn Dumper($object->{$denwis_key});
                         }
+                        if ($node_type eq 'leaf') {
+                            if ($invalid_leaf_string) { return 1 }
+                            else { return 0 }
+                        }
+                        # if its not a leaf we do not care about it
+                        else { return 0 }
                     }
 
-                    # Return the test result
-                    $test_result
+                    return $valid_structure;
                 };
 
-                # Add the test result to the return
-                $return->{test} = $test_situation + $test_denwis + $test_header;
+                # Step 1.1 Validate the json is full of known structures
+                my $structure_test = do {
+                    my $test_result = 0;
+                    my $referece_point = $spec->{input};
 
-                # Return the return :-)
-                $return
+                    # The initial level should be simply a list of keys
+                    # A mixture of 
+                    #   header(mandatory)
+                    #   situation(optional)
+                    #   background(optional)
+                    #   denwis(optional)
+                    #   sepsis(optional)
+                    #   news2(optional)
+
+                    if (ref($referece_point) eq 'HASH') {
+                        $test_result = 1;
+                    }
+                    else {
+                        $return->{error}    =   1;
+                        push @{$return->{error_initial}},'Initial structure was not a HASH';
+                        push @{$return->{errors}},'error_initial';
+                    }
+
+                    # Check the structure
+                    if ($test_result == 1) {
+                        my $valid_keys;
+                        map { $valid_keys->{$_} = 1 } qw(header situation background denwis sepsis news2);
+
+                        foreach my $level1key (%{$referece_point}) {
+                            if (!$valid_keys->{$level1key}) {
+                                push @{$return->{error_level1}},"Invalid level1 key found '$level1key'";
+                                push @{$return->{errors}},'error_level1';
+                                $test_result = 0;
+                            }
+                            else {
+                                # Recurse into 
+                                warn "Verification: ".$recursive_structure_test->($referece_point->{$level1key});
+                            }
+                        }
+                    }
+                };
+
+
+
+                $structure_test
             };
 
             $composition_obj->{output}  =   $xml_transformation->($composition_obj);
@@ -792,7 +718,8 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         my $selector = int(rand(scalar(@trends)));
                         $return = {
                             'value'     =>  int(rand(20)),
-                            'trend'     =>  $trends[$selector]
+                            'trend'     =>  $trends[$selector],
+
                         };
                         $return  =  $return;
                     }
@@ -829,7 +756,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 $patient->{'assessment'}->{news2}->{value}   =   do {
                     my $return;
                     if (int(rand(2)) == 1) {
-                        my @trends = qw(raising decreasing first same);
+                        my @trends = qw(raising decreasing same);
                         my $selector = int(rand(scalar(@trends)));
                         $return = {
                             'value'     =>  int(rand(100)),
