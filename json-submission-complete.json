@@ -7,8 +7,8 @@
             "start_time":"2020-09-07T21:04:10.789Z",
             "healthcare_facility":"Glen Carse Care Home",
             "composer":{
-            "name":"RN Joyce Brown",
-            "id":{
+                "name":"RN Joyce Brown",
+                "id":{
                     "type":"NMC",
                     "id":"12342341",
                     "namespace":"uk.org.nmc"
@@ -146,9 +146,9 @@
             ],
             "q_10_other_comment":"Just off her food",
             "total_score":3
-            },
-            "_comment_sepsis":1,
-            "sepsis_screening":{
+        },
+        "_comment_sepsis":1,
+        "sepsis_screening":{
             "risk_factors_for_sepsis":[
                 {
                     "|code":"at0009",
