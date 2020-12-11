@@ -828,6 +828,14 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
             # Build a list of queries
             my $return_spec     =   { 
+                filter_lte  => {
+                    key     => $params->{filter_key},
+                    value   => $params->{filter_max}
+                },
+                filter_gte  => {
+                    key     => $params->{filter_key},
+                    value   => $params->{filter_min}
+                },
                 filter      =>  {
                     key     =>  $params->{'filter_key'},
                     value   =>  $params->{'filter_value'}
@@ -901,6 +909,49 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     ) {
                         next;
                     }
+                }
+
+                # Don't expect good results if you use a string field here
+                if ($search_spec->{filter_lte}->{enabled}) {
+                    my $search_key      =
+                        $search_spec->{filter_lte}->{key};
+                    my $search_value    =
+                        $search_spec->{filter_lte}->{value};
+
+                    my $search_db_ref   =
+                        $search_db->{$userid}->{assessment};
+
+                    if (
+                        !defined $search_db_ref->{$search_key}
+                        ||
+                        !defined $search_db_ref->{$search_key}->{value}
+                        ||
+                        ($search_db_ref->{"$search_key"}->{value} > $search_value)
+                    ) {
+                        next;
+                    }
+
+                }
+
+                if ($search_spec->{filter_gte}->{enabled}) {
+                    my $search_key      =
+                        $search_spec->{filter_gte}->{key};
+                    my $search_value    =
+                        $search_spec->{filter_gte}->{value};
+
+                    my $search_db_ref   =
+                        $search_db->{$userid}->{assessment};
+
+                    if (
+                        !defined $search_db_ref->{$search_key}
+                        ||
+                        !defined $search_db_ref->{$search_key}->{value}
+                        ||
+                        ($search_db_ref->{"$search_key"}->{value} < $search_value)
+                    ) {
+                        next;
+                    }
+
                 }
 
                 # Search section
