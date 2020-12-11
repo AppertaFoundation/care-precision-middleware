@@ -714,7 +714,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 $patient->{'assessment'}->{denwis}->{value}   =   do {
                     my $return;
                     if (int(rand(2)) == 1) {
-                        my @trends = qw(raising decreasing first same); 
+                        my @trends = qw(increasing decreasing first same);
                         my $selector = int(rand(scalar(@trends)));
                         $return = {
                             'value'     =>  int(rand(20)),
@@ -756,11 +756,57 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 $patient->{'assessment'}->{news2}->{value}   =   do {
                     my $return;
                     if (int(rand(2)) == 1) {
-                        my @trends = qw(raising decreasing same);
+                        my @trends = qw(increasing decreasing first same);
                         my $selector = int(rand(scalar(@trends)));
+
+                        # Look away.
+                        my @clinical_risk = (
+                            {
+                                'localizedDescriptions' => {
+                                    'en' => 'Ward-based response.'
+                                },
+                                'value' => 'at0057',
+                                'label' => 'Low',
+                                'localizedLabels' => {
+                                    'en' => 'Low'
+                                }
+                            },
+                            {
+                                'localizedLabels' => {
+                                    'en' => 'Low-medium'
+                                },
+                                'label' => 'Low-medium',
+                                'value' => 'at0058',
+                                'localizedDescriptions' => {
+                                    'en' => 'Urgent ward-based response.'
+                                }
+                            },
+                            {
+                                'localizedDescriptions' => {
+                                    'en' => 'Key threshold for urgent response.'
+                                },
+                                'value' => 'at0059',
+                                'label' => 'Medium',
+                                'localizedLabels' => {
+                                    'en' => 'Medium'
+                                }
+                            },
+                            {
+                                'value' => 'at0060',
+                                'localizedDescriptions' => {
+                                    'en' => 'Urgent or emergency response.'
+                                },
+                                'localizedLabels' => {
+                                    'en' => 'High'
+                                },
+                                'label' => 'High'
+                            }
+                        );
+
                         $return = {
                             'value'     =>  int(rand(100)),
-                            'trend'     =>  $trends[$selector]
+                            'trend'     =>  $trends[rand @trends],
+                            'clinicalRisk' => $clinical_risk[rand @clinical_risk],
                         };
                         $return  =  $return;
                     }
