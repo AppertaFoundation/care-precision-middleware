@@ -182,7 +182,7 @@
                     <value>history</value>
                 </name>
                 <origin>
-                    <value>2020-11-17T16:34:03.868Z</value>
+                    <value>[% doc_date %]</value>
                 </origin>
                 <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
                     <name>
@@ -239,7 +239,7 @@
                     <value>history</value>
                 </name>
                 <origin>
-                    <value>2020-11-17T16:34:03.868Z</value>
+                    <value>[% doc_date %]</value>
                 </origin>
                 <events xsi:type="POINT_EVENT" archetype_node_id="at0003">
                     <name>
@@ -296,7 +296,7 @@
                     <value>History</value>
                 </name>
                 <origin>
-                    <value>2020-11-17T16:34:03.869Z</value>
+                    <value>[% doc_date %]</value>
                 </origin>
                 <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
                     <name>
@@ -314,7 +314,7 @@
                                 <value>Assessment</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>3</value>
+                                <value>[% json_path('/1/background/frailty/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/background/frailty/|value') %]</value>
                                     <defining_code>
@@ -510,7 +510,7 @@
                                 <value>Q1 Breathing</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>1</value>
+                                <value>[% json_path('/1/denwis/q1_breathing/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q1_breathing/|value') %]</value>
                                     <defining_code>
@@ -541,7 +541,7 @@
                                 <value>Q2 Circulation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>0</value>
+                                <value>[% json_path('/1/denwis/q2_circulation/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q2_circulation/|value') %]</value>
                                     <defining_code>
@@ -572,7 +572,7 @@
                                 <value>Q3 Temperature</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>1</value>
+                                <value>[% json_path('/1/denwis/q3_temperature/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q3_temperature/|value') %]</value>
                                     <defining_code>
@@ -603,7 +603,7 @@
                                 <value>Q4 Mentation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>0</value>
+                                <value>[% json_path('/1/denwis/mentation_indicator/|oridnal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/mentation_indicator/|value') %]</value>
                                     <defining_code>
@@ -634,7 +634,7 @@
                                 <value>Q5 Agitation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>1</value>
+                                <value>[% json_path('/1/denwis/q5_agitation/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q5_agitation/|value') %]</value>
                                     <defining_code>
@@ -665,7 +665,7 @@
                                 <value>Q6 Pain</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>0</value>
+                                <value>[% json_path('/1/denwis/q6_pain/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q6_pain/|value') %]</value>
                                     <defining_code>
@@ -696,7 +696,7 @@
                                 <value>Q7 Trajectory</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>1</value>
+                                <value>[% json_path('/1/denwis/q7_trajectory/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q7_trajectory/|value') %]</value>
                                     <defining_code>
@@ -727,14 +727,14 @@
                                 <value>Q8 Patient subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>0</value>
+                                <value>[% json_path('/1/denwis/q8_patient_subjective/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q8_patient_subjective/|value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q8_patient_subjective/|ode') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q8_patient_subjective/|code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -758,7 +758,7 @@
                                 <value>Q9 Nurse subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>0</value>
+                                <value>[% json_path('/1/denwis/q9_nurse_subjective/|ordinal') %]</value>
                                 <symbol>
                                     <value>[% json_path('/1/denwis/q9_nurse_subjective/|value') %]</value>
                                     <defining_code>
@@ -1150,7 +1150,7 @@
                                         <value>999 Flag</value>
                                     </name>
                                     <value xsi:type="DV_CODED_TEXT">
-                                        <value>‘I feel I might die’</value>
+                                        <value>'I feel I might die'</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>

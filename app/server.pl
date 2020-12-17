@@ -37,6 +37,8 @@ use Data::Search;
 use DateTime;
 use XML::TreeBuilder;
 use Path::Tiny;
+use Template;
+use JSON::Pointer;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -154,7 +156,6 @@ my $service_auth = POE::Session->create(
         },
         'authorise'         =>  sub {
             my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
-
 
         }
     },
@@ -412,11 +413,20 @@ my $handler__cdr = POE::Session->create(
                 input   =>  $passed_objects->[1]
             };
 
-            $global->{uuids}->{$uuid} = $composition_obj;
-            push $global->{uuids}->{$patient_uuid}->{_compositions}->@*, $composition_obj;
+            my $xml_transformation = sub {
+                my $big_href = shift;
+                my $tt2 = Template->new();
 
-            $frontend_response->header('Content-Type' => 'application/json');
-            $frontend_response->content(encode_json($composition_obj->{input}));
+                my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
+
+                my $xml = $tt2->process('template.xml', { json_path => $json_path });
+            };
+
+            $composition_obj->{output}  =   $xml_transformation->($composition_obj);
+
+            # Finally return the XML file so we can see the results
+            $frontend_response->header('Content-Type' => 'application/xml');
+            $frontend_response->content($composition_obj->{base});
             $frontend_response->code(201);
             $kernel->yield('finalize', $frontend_response);
         },
@@ -638,7 +648,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             $response->header('Content-Type' => 'application/json');
 
             # Build a list of queries
-            my $return_spec     =   { 
+            my $return_spec     =   {
                 filter_lte  => {
                     key     => $params->{filter_key},
                     value   => $params->{filter_max}
