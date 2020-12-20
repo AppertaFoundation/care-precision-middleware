@@ -18,7 +18,6 @@ use POE qw(
     Component::Server::SimpleHTTP
     Component::Client::Keepalive
     Component::Client::HTTP
-    Component::Pool::DBI
 );
 
 use URI;
@@ -156,41 +155,6 @@ my $service_auth = POE::Session->create(
 
             
         }
-    },
-);
-
-my $service_db = POE::Session->create(
-    inline_states => {
-        '_start'            =>  sub {
-            my ($kernel,$heap) = @_[KERNEL,HEAP];
-            $kernel->alias_set('service::db');
-
-            $heap->{dbpool} = POE::Component::Pool::DBI->new(
-                connections         =>  10,
-                dsn                 =>  'DBI:Pg:database=c19',
-                username            =>  'c19',
-                password            =>  ''
-            );
-            say '';
-
-            $heap->{dbpool}->query(
-                callback => "db_test",
-                query    => "INSERT INTO master (id) VALUES (?)",
-                params   => [ $uuid->to_string($uuid->create()) ],
-                userdata => "example"
-            );
-        },
-        'authorise'         =>  sub {
-            my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
-
-            
-        },
-        'db_test'           =>  sub {
-            my ($kernel, $heap, $results, $userdata) = 
-                @_[ KERNEL, HEAP, ARG0, ARG1 ];
-
-            say "Succesfull DB Connection test";
-        },
     },
 );
 
