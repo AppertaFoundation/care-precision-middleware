@@ -378,9 +378,8 @@ my $handler__cdr = POE::Session->create(
                 || !$passed_objects->[1] 
                 || ref($passed_objects->[1]) ne 'HASH'
             ) {
-                my $response = $ehrbase_response->{response};
-                $response->content("Invalid request");
-                $response->code(400);
+                $frontend_response->content("Invalid request");
+                $frontend_response->code(400);
                 $kernel->yield('finalize', $frontend_response);
                 return;
             }
