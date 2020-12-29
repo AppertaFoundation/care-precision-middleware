@@ -52,13 +52,14 @@ my $global      = {
     config      =>  {
         session_timeout =>  120
     },
-    db          =>  {},
+    patient_db  =>  {},
     handler     =>  {},
     helper      =>  {
         'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
         'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
     },
-    compose     =>  {}
+    compose     =>  {},
+    uuids       =>  {},
 };
 
 my $pool = POE::Component::Client::Keepalive->new(
@@ -80,7 +81,7 @@ my $api_prefix          =   '/c19-alpha/0.0.1';
 my $api_hostname        =   'api.c19.devmode.xyz';
 my $api_hostname_cookie =   '.c19.devmode.xyz';
 
-my $ehrbase             =   'http://192.168.101.3:8002';
+my $ehrbase             =   'http://localhost:8002';
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -153,7 +154,7 @@ my $service_auth = POE::Session->create(
         'authorise'         =>  sub {
             my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
 
-            
+
         }
     },
 );
@@ -257,6 +258,49 @@ my $handler_c19_alpha_0_0_1_ = POE::Session->create(
     }
 );
 
+my $handler__cdr_draft = POE::Session->create(
+    inline_states => {
+        '_start'            =>  sub {
+            my ( $kernel, $heap ) = @_[ KERNEL, HEAP ];
+
+            my $handler     =   "$api_prefix/cdr/draft";
+            $heap->{myid}   =   "handler::$handler";
+
+            $kernel->alias_set($heap->{myid});
+            $kernel->post('service::main','register_handler',$heap->{myid});
+        },
+        'process_request'   =>  sub {
+            my ( $kernel, $heap, $session, $sender, $packet ) =
+                @_[ KERNEL, HEAP, SESSION, SENDER, ARG0 ];
+
+            $kernel->yield(lc($packet->{request}->method),$packet);
+        },
+        'post'               =>  sub {
+            my ( $kernel, $heap, $session, $packet ) =
+                @_[ KERNEL, HEAP, SESSION, ARG0 ];
+
+            my $payload = decode_json($packet->{request}->decoded_content());
+
+            my $assessment = $payload->[1];
+            my $patient_uuid = $assessment->{situation}->{uuid};
+            my $patient = $global->{uuids}->{$patient_uuid};
+
+            make_up_score( $assessment );
+            my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+
+            $packet->{response}->code(200);
+            $packet->{response}->header('Content-Type' => 'application/json');
+            $packet->{response}->content(encode_json($summarised));
+
+            $kernel->yield('finalize', $packet->{response});
+        },
+        'finalize'          =>  sub {
+            my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
+            $kernel->post( 'HTTPD', 'DONE', $response );
+        },
+    }
+);
+
 my $handler__cdr = POE::Session->create(
     inline_states => {
         '_start'            =>  sub {
@@ -355,22 +399,26 @@ my $handler__cdr = POE::Session->create(
             my $frontend_response   =   $request_obj->[1]->[1];
 
             # Check the request templateid is present within the template list on ehrbase
-            my $valid_template_test =   do  {
-                my $templates_accessible    =   decode_json($ehrbase_response->decoded_content());
-                my $template_requested      =   $passed_objects->[0]->{templateid};
-                my $template_check_result   =   0;
+            # Pass this to avoid bothering with ehrbase at all (it works, but at
+            # this point I'm avoiding any external systems).
 
-                foreach my $availible_template (@{$templates_accessible}) {
-                    if (
-                        ($availible_template->{template_id} eq $template_requested)
-                    )
-                    {
-                        $template_check_result = 1;
-                        last;
-                    }
-                }
-                $template_check_result
-            };
+            my $valid_template_test =   do  { 1 };
+
+#                my $templates_accessible    =   decode_json($ehrbase_response->decoded_content());
+#                my $template_requested      =   $passed_objects->[0]->{templateid};
+#                my $template_check_result   =   0;
+#
+#                foreach my $availible_template (@{$templates_accessible}) {
+#                    if (
+#                        ($availible_template->{template_id} eq $template_requested)
+#                    )
+#                    {
+#                        $template_check_result = 1;
+#                        last;
+#                    }
+#                }
+#                $template_check_result
+#            };
 
             # If an invalid template or JSON then return that now
             if (
@@ -385,130 +433,21 @@ my $handler__cdr = POE::Session->create(
             }
 
             # We have a valid templateid request lets proceed with creating a composition!
+            my $patient_uuid = $passed_objects->[1]->{situation}->{uuid};
 
             # Create a place to put everything we need for ease and clarity
+            my $uuid = $uuid->to_string($uuid->create());
             my $composition_obj =   {
-                uuid    =>  $uuid->to_string($uuid->create()),
-                base    =>  join('',read_file('composition.xml')),
+                uuid    =>  $uuid,
+                #base    =>  join('',read_file('composition.xml')),
                 input   =>  $passed_objects->[1]
             };
 
-            my $xml_transformation = sub {
-                my $spec = $_[0] or die "No spec passed";
+            $global->{uuids}->{$uuid} = $composition_obj;
+            push $global->{uuids}->{$patient_uuid}->{_compositions}->@*, $composition_obj;
 
-                # A place to stash our return
-                my $return = {};
-
-                # Process the XML file and get back something that can be adjusted
-                my $tree = XML::TreeBuilder->new({ 'NoExpand' => 0, 'ErrorContext' => 0 });
-
-                # Read in the initial base file
-                $tree->parse($spec->{base});
-
-                # Step 1 - Validate the input json - Should be a better test!
-                # possible use knowledge of structure to recurse into any structure
-                $return->{error} = 0;
-
-                # Create a function in scalar for easier recursion
-                my $recursive_structure_test = sub { warn "You should never see this" };
-                $recursive_structure_test = sub {
-                    # Every final leaf in this structure should end eiter in
-                    # a single string or a hash with a set of strings with a key
-                    # beginning with |
-                    my ($object_reference)      =
-                        @_;
-                    my $object_type             =
-                        ref($object_reference);
-
-                    my $valid_structure = 0;
-
-                    if ($object_type eq 'ARRAY') {
-                        foreach my $array_child (@{$object_reference})   {
-                            # There are no arrays that do not end in a hash leaf
-                            # so all children here (if any) have to be hashes
-                            $valid_structure = 
-                                $recursive_structure_test->($array_child);
-                        }
-                    }
-                    elsif ($object_type eq 'HASH') {
-                        my $invalid_leaf_string = 0;
-                        my $node_type           = 'leaf';
-                        foreach my $hash_child (keys %{$object_reference})   {
-                            if (ref($object_reference->{$hash_child})) {
-                                $node_type          =
-                                    'set';
-                                $valid_structure    += 
-                                    $recursive_structure_test->($object_reference->{$hash_child});
-                            }
-                            else {
-                                if ($object_reference->{$hash_child} !~ m#^|#) {
-                                    $invalid_leaf_string++;
-                                }
-                            }
-                        }
-                        if ($node_type eq 'leaf') {
-                            if ($invalid_leaf_string) { return 1 }
-                            else { return 0 }
-                        }
-                        # if its not a leaf we do not care about it
-                        else { return 0 }
-                    }
-
-                    return $valid_structure;
-                };
-
-                # Step 1.1 Validate the json is full of known structures
-                my $structure_test = do {
-                    my $test_result = 0;
-                    my $referece_point = $spec->{input};
-
-                    # The initial level should be simply a list of keys
-                    # A mixture of 
-                    #   header(mandatory)
-                    #   situation(optional)
-                    #   background(optional)
-                    #   denwis(optional)
-                    #   sepsis(optional)
-                    #   news2(optional)
-
-                    if (ref($referece_point) eq 'HASH') {
-                        $test_result = 1;
-                    }
-                    else {
-                        $return->{error}    =   1;
-                        push @{$return->{error_initial}},'Initial structure was not a HASH';
-                        push @{$return->{errors}},'error_initial';
-                    }
-
-                    # Check the structure
-                    if ($test_result == 1) {
-                        my $valid_keys;
-                        map { $valid_keys->{$_} = 1 } qw(header situation background denwis sepsis news2);
-
-                        foreach my $level1key (%{$referece_point}) {
-                            if (!$valid_keys->{$level1key}) {
-                                push @{$return->{error_level1}},"Invalid level1 key found '$level1key'";
-                                push @{$return->{errors}},'error_level1';
-                                $test_result = 0;
-                            }
-                            else {
-                                # Recurse into 
-                                warn "Verification: ".$recursive_structure_test->($referece_point->{$level1key});
-                            }
-                        }
-                    }
-                };
-
-
-
-                $structure_test
-            };
-
-            $composition_obj->{output}  =   $xml_transformation->($composition_obj);
-
-            # Finally return the XML file so we can see the results
-            $frontend_response->header('Content-Type' => 'application/xml');
-            $frontend_response->content($composition_obj->{base});
+            $frontend_response->header('Content-Type' => 'application/json');
+            $frontend_response->content(encode_json($composition_obj->{input}));
             $frontend_response->code(201);
             $kernel->yield('finalize', $frontend_response);
         },
@@ -629,18 +568,19 @@ my $handler__meta_demographics_patient = POE::Session->create(
             # Simplify names, add assessments and digitize date of birth
             MAIN: foreach my $patient (@{$patient_list->{entry}}) {
                 $patient->{_uuid} = $uuid->to_string($uuid->create());
+                $patient->{_compositions} = [];
 
                 my $name_res    =   $patient->{resource}->{name};
                 my $name_use    =   [];
 
-                NAME: foreach my $oldname (@{$name_res})  {
+                foreach my $oldname (@{$name_res})  {
                     my $new_name = [
                         $oldname->{prefix}->[0] || '',
                         $oldname->{given}->[0] || '',
                         $oldname->{family} || ''
                     ];
 
-                    if ($oldname->{use} && $oldname->{use} eq 'official')  { 
+                    if ($oldname->{use} && $oldname->{use} eq 'official') {
                         $name_use = $new_name;
                     }
                     else {
@@ -666,114 +606,6 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         }
                     }
                     $return
-                };
-
-
-                # Add example examinations
-                $patient->{'assessment'} = {};
-
-                # TODO Go make a query to ehrbase for all the latest versions
-                # of these
-                $patient->{'assessment'}->{denwis}->{value}   =   do {
-                    my $return;
-                    if (int(rand(2)) == 1) {
-                        my @trends = qw(increasing decreasing first same);
-                        my $selector = int(rand(scalar(@trends)));
-                        $return = {
-                            'value'     =>  int(rand(20)),
-                            'trend'     =>  $trends[$selector],
-
-                        };
-                        $return  =  $return;
-                    }
-                    $return;
-                };
-
-                $patient->{'assessment'}->{covid}->{value}   =   do {
-                    my $return;
-                    if (int(rand(2)) == 1) {
-                        my @flags = qw(red amber grey green);
-                        my $selector = int(rand(scalar(@flags)));
-                        $return->{suspected_covid_status} =
-                                $flags[$selector];
-                        $return->{date_isolation_due_to_end} =
-                            '2020-11-10T22:39:31.826Z';
-                        $return->{covid_test_request} =  {
-                            'date'  =>  '2020-11-10T22:39:31.826Z',
-                            'value' =>  'EXAMPLE TEXT'
-                        }
-                    }
-                    $return;
-                };
-
-                $patient->{'assessment'}->{sepsis}->{value}   =   do {
-                    my $return;
-                    if (int(rand(2)) == 1) {
-                        my @flags = qw(red amber grey);
-                        my $selector = int(rand(scalar(@flags)));
-                        $return = { value => $flags[$selector] };
-                    }
-                    $return;
-                };
-
-                $patient->{'assessment'}->{news2}->{value}   =   do {
-                    my $return;
-                    if (int(rand(2)) == 1) {
-                        my @trends = qw(increasing decreasing first same);
-                        my $selector = int(rand(scalar(@trends)));
-
-                        # Look away.
-                        my @clinical_risk = (
-                            {
-                                'localizedDescriptions' => {
-                                    'en' => 'Ward-based response.'
-                                },
-                                'value' => 'at0057',
-                                'label' => 'Low',
-                                'localizedLabels' => {
-                                    'en' => 'Low'
-                                }
-                            },
-                            {
-                                'localizedLabels' => {
-                                    'en' => 'Low-medium'
-                                },
-                                'label' => 'Low-medium',
-                                'value' => 'at0058',
-                                'localizedDescriptions' => {
-                                    'en' => 'Urgent ward-based response.'
-                                }
-                            },
-                            {
-                                'localizedDescriptions' => {
-                                    'en' => 'Key threshold for urgent response.'
-                                },
-                                'value' => 'at0059',
-                                'label' => 'Medium',
-                                'localizedLabels' => {
-                                    'en' => 'Medium'
-                                }
-                            },
-                            {
-                                'value' => 'at0060',
-                                'localizedDescriptions' => {
-                                    'en' => 'Urgent or emergency response.'
-                                },
-                                'localizedLabels' => {
-                                    'en' => 'High'
-                                },
-                                'label' => 'High'
-                            }
-                        );
-
-                        $return = {
-                            'value'     =>  int(rand(100)),
-                            'trend'     =>  $trends[rand @trends],
-                            'clinicalRisk' => $clinical_risk[rand @clinical_risk],
-                        };
-                        $return  =  $return;
-                    }
-                    $return;
                 };
 
                 # Convert Date of birth to digitally calculable date
@@ -810,11 +642,12 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     'gender'            =>  $customer->{resource}->{'gender'},
                     'identifier'        =>  $customer->{resource}->{'identifier'},
                     'location'          =>  'Bedroom',
-                    'assessment'        =>  $customer->{'assessment'},
+                    'assessment'        =>  $customer->{assessment},
                     'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
                 };
 
-                $global->{patient_db}->{"$identifier"} = $datablock;
+                $global->{patient_db}->{$identifier} = $datablock;
+                $global->{uuids}->{$identifier} = $customer;
             }
 
         },
@@ -886,6 +719,10 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 'search',
                 $return_spec 
             );
+
+            for (@$result) {
+                $_->{assessment} = summarise_composed_assessment( compose_assessments( $global->{uuids}->{ $_->{id} } ) )
+            }
 
             $response->content(encode_json($result));
 
@@ -1459,4 +1296,186 @@ sub new_session($sessionid) {
     );
 
     return $session;
+}
+
+sub compose_assessments {
+    my $patient = shift;
+    # Put a draft assesment in here. You can do multiple I suppose.
+    my @extra = @_;
+
+    my $composed = {};
+
+    for my $composition (@extra, map { $_->{input} } $patient->{_compositions}->@*) {
+        if ($composition->{denwis}) {
+            if (not $composed->{denwis}) {
+                # Shallow copy for when we add trend to it later
+                $composed->{denwis} = { $composition->{denwis}->%* };
+            }
+            elsif (not $composed->{denwis}->{trend}) {
+                # The new score ($composed) goes on the left of the <=>
+                $composed->{denwis}->{trend} =
+                ( qw(same increasing decreasing) )[
+                    $composed->{denwis}->{total_score} <=> $composition->{denwis}->{total_score}
+                ]
+            }
+        }
+
+        if ($composition->{sepsis}) {
+            if (not $composed->{sepsis}) {
+                # Shallow copy for when we add trend to it later
+                $composed->{sepsis} = { $composition->{sepsis}->%* };
+            }
+            elsif (not $composed->{sepsis}->{trend}) {
+                # The new score ($composed) goes on the left of the <=>
+                $composed->{sepsis}->{trend} =
+                ( qw(same increasing decreasing) )[
+                    $composed->{sepsis}->{total_score} <=> $composition->{sepsis}->{total_score}
+                ]
+            }
+        }
+
+        if ($composition->{news2}) {
+            if (not $composed->{news2}) {
+                # Shallow copy for when we add trend to it later
+                $composed->{news2} = { $composition->{news2}->%* };
+            }
+            elsif (not $composed->{news2}->{trend}) {
+                # The new score ($composed) goes on the left of the <=>
+                $composed->{news2}->{trend} =
+                ( qw(same increasing decreasing) )[
+                    $composed->{news2}->{total_score} <=> $composition->{news2}->{total_score}
+                ]
+            }
+        }
+    }
+
+    $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis sepsis news2/;
+
+    return $composed;
+}
+
+sub summarise_composed_assessment {
+    my $composed = shift;
+    my $summary = {};
+
+    if ($composed->{denwis}) {
+        $summary->{denwis}->{value} = {
+            value     =>  $composed->{denwis}->{total_score},
+            trend     =>  $composed->{denwis}->{trend},
+        }
+    }
+
+    return $summary;
+
+=for example
+    $patient->{'assessment'}->{sepsis}->{value}   =   do {
+        my $return;
+        if (int(rand(2)) == 1) {
+            my @flags = qw(red amber grey);
+            my $selector = int(rand(scalar(@flags)));
+            $return = { value => $flags[$selector] };
+        }
+        $return;
+    };
+
+    $patient->{'assessment'}->{news2}->{value}   =   do {
+        my $return;
+        if (int(rand(2)) == 1) {
+            my @trends = qw(increasing decreasing first same);
+            my $selector = int(rand(scalar(@trends)));
+
+            # Look away.
+            my @clinical_risk = (
+                {
+                    'localizedDescriptions' => {
+                        'en' => 'Ward-based response.'
+                    },
+                    'value' => 'at0057',
+                    'label' => 'Low',
+                    'localizedLabels' => {
+                        'en' => 'Low'
+                    }
+                },
+                {
+                    'localizedLabels' => {
+                        'en' => 'Low-medium'
+                    },
+                    'label' => 'Low-medium',
+                    'value' => 'at0058',
+                    'localizedDescriptions' => {
+                        'en' => 'Urgent ward-based response.'
+                    }
+                },
+                {
+                    'localizedDescriptions' => {
+                        'en' => 'Key threshold for urgent response.'
+                    },
+                    'value' => 'at0059',
+                    'label' => 'Medium',
+                    'localizedLabels' => {
+                        'en' => 'Medium'
+                    }
+                },
+                {
+                    'value' => 'at0060',
+                    'localizedDescriptions' => {
+                        'en' => 'Urgent or emergency response.'
+                    },
+                    'localizedLabels' => {
+                        'en' => 'High'
+                    },
+                    'label' => 'High'
+                }
+            );
+
+            $return = {
+                'value'     =>  int(rand(100)),
+                'trend'     =>  $trends[rand @trends],
+                'clinicalRisk' => $clinical_risk[rand @clinical_risk],
+            };
+            $return  =  $return;
+        }
+        $return;
+    };
+
+    $patient->{'assessment'}->{covid}->{value}   =   do {
+        my $return;
+        if (int(rand(2)) == 1) {
+            my @flags = qw(red amber grey green);
+            my $selector = int(rand(scalar(@flags)));
+            $return->{suspected_covid_status} =
+                    $flags[$selector];
+            $return->{date_isolation_due_to_end} =
+                '2020-11-10T22:39:31.826Z';
+            $return->{covid_test_request} =  {
+                'date'  =>  '2020-11-10T22:39:31.826Z',
+                'value' =>  'EXAMPLE TEXT'
+            }
+        }
+        $return;
+    };
+
+=cut
+
+}
+
+sub make_up_score {
+    # just adds total_scores to the assessment
+    my $assessment = shift;
+
+    if ($assessment->{denwis}) {
+        $assessment->{denwis}->{total_score} = (int rand 20) + 1;
+    }
+
+    if ($assessment->{sepsis}) {
+        $assessment->{sepsis}->{total_score} = (int rand 10) + 1;
+    }
+
+    if ($assessment->{news2}) {
+        $assessment->{news2}->{total_score} = (int rand 10) + 1;
+    }
+
+    if ($assessment->{covid}) {
+        # no idea
+    }
 }
