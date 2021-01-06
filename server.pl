@@ -1365,98 +1365,92 @@ sub summarise_composed_assessment {
         }
     }
 
+    if ($composed->{sepsis}) {
+        $summary->{sepsis}->{value} = {
+            value     =>  $composed->{sepsis}->{total_score},
+            trend     =>  $composed->{sepsis}->{trend},
+        }
+    }
+
     return $summary;
 
-=for example
-    $patient->{'assessment'}->{sepsis}->{value}   =   do {
-        my $return;
-        if (int(rand(2)) == 1) {
-            my @flags = qw(red amber grey);
-            my $selector = int(rand(scalar(@flags)));
-            $return = { value => $flags[$selector] };
-        }
-        $return;
-    };
-
-    $patient->{'assessment'}->{news2}->{value}   =   do {
-        my $return;
-        if (int(rand(2)) == 1) {
-            my @trends = qw(increasing decreasing first same);
-            my $selector = int(rand(scalar(@trends)));
-
-            # Look away.
-            my @clinical_risk = (
-                {
-                    'localizedDescriptions' => {
-                        'en' => 'Ward-based response.'
+    if ($composed->{news2}) {
+        $summary->{news2}->{value}   =   do {
+            my $return;
+            if (int(rand(2)) == 1) {
+                # Just pick one of these at random
+                my @clinical_risk = (
+                    {
+                        'localizedDescriptions' => {
+                            'en' => 'Ward-based response.'
+                        },
+                        'value' => 'at0057',
+                        'label' => 'Low',
+                        'localizedLabels' => {
+                            'en' => 'Low'
+                        }
                     },
-                    'value' => 'at0057',
-                    'label' => 'Low',
-                    'localizedLabels' => {
-                        'en' => 'Low'
+                    {
+                        'localizedLabels' => {
+                            'en' => 'Low-medium'
+                        },
+                        'label' => 'Low-medium',
+                        'value' => 'at0058',
+                        'localizedDescriptions' => {
+                            'en' => 'Urgent ward-based response.'
+                        }
+                    },
+                    {
+                        'localizedDescriptions' => {
+                            'en' => 'Key threshold for urgent response.'
+                        },
+                        'value' => 'at0059',
+                        'label' => 'Medium',
+                        'localizedLabels' => {
+                            'en' => 'Medium'
+                        }
+                    },
+                    {
+                        'value' => 'at0060',
+
+                        'localizedDescriptions' => {
+                            'en' => 'Urgent or emergency response.'
+                        },
+                        'localizedLabels' => {
+                            'en' => 'High'
+                        },
+                        'label' => 'High'
                     }
-                },
-                {
-                    'localizedLabels' => {
-                        'en' => 'Low-medium'
-                    },
-                    'label' => 'Low-medium',
-                    'value' => 'at0058',
-                    'localizedDescriptions' => {
-                        'en' => 'Urgent ward-based response.'
-                    }
-                },
-                {
-                    'localizedDescriptions' => {
-                        'en' => 'Key threshold for urgent response.'
-                    },
-                    'value' => 'at0059',
-                    'label' => 'Medium',
-                    'localizedLabels' => {
-                        'en' => 'Medium'
-                    }
-                },
-                {
-                    'value' => 'at0060',
-                    'localizedDescriptions' => {
-                        'en' => 'Urgent or emergency response.'
-                    },
-                    'localizedLabels' => {
-                        'en' => 'High'
-                    },
-                    'label' => 'High'
-                }
-            );
+                );
 
-            $return = {
-                'value'     =>  int(rand(100)),
-                'trend'     =>  $trends[rand @trends],
-                'clinicalRisk' => $clinical_risk[rand @clinical_risk],
-            };
-            $return  =  $return;
-        }
-        $return;
-    };
+                $return = {
+                    value        =>  $composed->{news2}->{total_score},
+                    trend        =>  $composed->{news2}->{trend},
+                    clinicalRisk => $clinical_risk[rand @clinical_risk],
+                };
+                $return  =  $return;
+            }
+            $return;
+        };
+    }
 
-    $patient->{'assessment'}->{covid}->{value}   =   do {
-        my $return;
-        if (int(rand(2)) == 1) {
+    if ($composed->{covid}) {
+        $summary->{covid}->{value}   =   do {
+            my $return;
             my @flags = qw(red amber grey green);
-            my $selector = int(rand(scalar(@flags)));
+
             $return->{suspected_covid_status} =
-                    $flags[$selector];
+                    $flags[rand @flags];
             $return->{date_isolation_due_to_end} =
                 '2020-11-10T22:39:31.826Z';
             $return->{covid_test_request} =  {
                 'date'  =>  '2020-11-10T22:39:31.826Z',
                 'value' =>  'EXAMPLE TEXT'
-            }
-        }
-        $return;
-    };
+            };
 
-=cut
-
+            $return;
+        };
+    }
 }
 
 sub make_up_score {
