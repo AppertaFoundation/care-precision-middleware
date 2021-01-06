@@ -1372,65 +1372,58 @@ sub summarise_composed_assessment {
         }
     }
 
-    return $summary;
-
     if ($composed->{news2}) {
         $summary->{news2}->{value}   =   do {
-            my $return;
-            if (int(rand(2)) == 1) {
-                # Just pick one of these at random
-                my @clinical_risk = (
-                    {
-                        'localizedDescriptions' => {
-                            'en' => 'Ward-based response.'
-                        },
-                        'value' => 'at0057',
-                        'label' => 'Low',
-                        'localizedLabels' => {
-                            'en' => 'Low'
-                        }
+            # Just pick one of these at random
+            my @clinical_risk = (
+                {
+                    'localizedDescriptions' => {
+                        'en' => 'Ward-based response.'
                     },
-                    {
-                        'localizedLabels' => {
-                            'en' => 'Low-medium'
-                        },
-                        'label' => 'Low-medium',
-                        'value' => 'at0058',
-                        'localizedDescriptions' => {
-                            'en' => 'Urgent ward-based response.'
-                        }
-                    },
-                    {
-                        'localizedDescriptions' => {
-                            'en' => 'Key threshold for urgent response.'
-                        },
-                        'value' => 'at0059',
-                        'label' => 'Medium',
-                        'localizedLabels' => {
-                            'en' => 'Medium'
-                        }
-                    },
-                    {
-                        'value' => 'at0060',
-
-                        'localizedDescriptions' => {
-                            'en' => 'Urgent or emergency response.'
-                        },
-                        'localizedLabels' => {
-                            'en' => 'High'
-                        },
-                        'label' => 'High'
+                    'value' => 'at0057',
+                    'label' => 'Low',
+                    'localizedLabels' => {
+                        'en' => 'Low'
                     }
-                );
+                },
+                {
+                    'localizedLabels' => {
+                        'en' => 'Low-medium'
+                    },
+                    'label' => 'Low-medium',
+                    'value' => 'at0058',
+                    'localizedDescriptions' => {
+                        'en' => 'Urgent ward-based response.'
+                    }
+                },
+                {
+                    'localizedDescriptions' => {
+                        'en' => 'Key threshold for urgent response.'
+                    },
+                    'value' => 'at0059',
+                    'label' => 'Medium',
+                    'localizedLabels' => {
+                        'en' => 'Medium'
+                    }
+                },
+                {
+                    'value' => 'at0060',
 
-                $return = {
-                    value        =>  $composed->{news2}->{total_score},
-                    trend        =>  $composed->{news2}->{trend},
-                    clinicalRisk => $clinical_risk[rand @clinical_risk],
-                };
-                $return  =  $return;
-            }
-            $return;
+                    'localizedDescriptions' => {
+                        'en' => 'Urgent or emergency response.'
+                    },
+                    'localizedLabels' => {
+                        'en' => 'High'
+                    },
+                    'label' => 'High'
+                }
+            );
+
+            {
+                value        =>  $composed->{news2}->{total_score},
+                trend        =>  $composed->{news2}->{trend},
+                clinicalRisk => $clinical_risk[rand @clinical_risk],
+            };
         };
     }
 
@@ -1451,6 +1444,8 @@ sub summarise_composed_assessment {
             $return;
         };
     }
+
+    return $summary;
 }
 
 sub make_up_score {
@@ -1472,4 +1467,7 @@ sub make_up_score {
     if ($assessment->{covid}) {
         # no idea
     }
+
+    # It edits it in-place because I'm lazy - returning it is good practice
+    return $assessment;
 }
