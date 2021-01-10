@@ -1325,13 +1325,6 @@ sub compose_assessments {
                 # Shallow copy for when we add trend to it later
                 $composed->{sepsis} = { $composition->{sepsis}->%* };
             }
-            elsif (not $composed->{sepsis}->{trend}) {
-                # The new score ($composed) goes on the left of the <=>
-                $composed->{sepsis}->{trend} =
-                ( qw(same increasing decreasing) )[
-                    $composed->{sepsis}->{total_score} <=> $composition->{sepsis}->{total_score}
-                ]
-            }
         }
 
         if ($composition->{news2}) {
@@ -1349,7 +1342,7 @@ sub compose_assessments {
         }
     }
 
-    $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis sepsis news2/;
+    $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis news2/;
 
     return $composed;
 }
