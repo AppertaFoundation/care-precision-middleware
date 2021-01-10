@@ -1360,8 +1360,7 @@ sub summarise_composed_assessment {
 
     if ($composed->{sepsis}) {
         $summary->{sepsis}->{value} = {
-            value     =>  $composed->{sepsis}->{total_score},
-            trend     =>  $composed->{sepsis}->{trend},
+            value     =>  $composed->{sepsis}->{value},
         }
     }
 
@@ -1442,7 +1441,7 @@ sub summarise_composed_assessment {
 }
 
 sub make_up_score {
-    # just adds total_scores to the assessment
+    # just adds total_scores or whatever to the assessment
     my $assessment = shift;
 
     if ($assessment->{denwis}) {
@@ -1450,7 +1449,7 @@ sub make_up_score {
     }
 
     if ($assessment->{sepsis}) {
-        $assessment->{sepsis}->{total_score} = (int rand 10) + 1;
+        $assessment->{sepsis}->{value} = (qw/red green amber grey/)[rand 4];
     }
 
     if ($assessment->{news2}) {
