@@ -1336,7 +1336,7 @@ sub compose_assessments {
                 # The new score ($composed) goes on the left of the <=>
                 $composed->{news2}->{trend} =
                 ( qw(same increasing decreasing) )[
-                    $composed->{news2}->{total_score} <=> $composition->{news2}->{total_score}
+                    $composed->{news2}->{score}->{total_score} <=> $composition->{news2}->{score}->{total_score}
                 ]
             }
         }
@@ -1412,8 +1412,8 @@ sub summarise_composed_assessment {
             );
 
             {
-                value        =>  $composed->{news2}->{total_score},
-                trend        =>  $composed->{news2}->{trend},
+                value        => $composed->{news2}->{score}->{total_score},
+                trend        => $composed->{news2}->{score}->{trend},
                 clinicalRisk => $clinical_risk[rand @clinical_risk],
             };
         };
@@ -1453,7 +1453,49 @@ sub make_up_score {
     }
 
     if ($assessment->{news2}) {
-        $assessment->{news2}->{total_score} = (int rand 10) + 1;
+        $assessment->{news2}->{score} = {
+            "respiration_rate" => {
+              "code" => "at0020",
+              "value" => "21-24",
+              "ordinal" => 2
+            },
+            "spo_scale_1" => {
+              "code" => "at0031",
+              "value" => "94-95",
+              "ordinal" => 1
+            },
+            "air_or_oxygen" => {
+              "code" => "at0036",
+              "value" => "Air",
+              "ordinal" => 0
+            },
+            "systolic_blood_pressure" => {
+              "code" => "at0017",
+              "value" => "≤90",
+              "ordinal" => 3
+            },
+            "pulse" => {
+              "code" => "at0013",
+              "value" => "51-90",
+              "ordinal" => 0
+            },
+            "consciousness" => {
+              "code" => "at0024",
+              "value" => "Alert",
+              "ordinal" => 0
+            },
+            "temperature" => {
+              "code" => "at0023",
+              "value" => "35.1-36.0",
+              "ordinal" => 1
+            },
+            "clinical_risk_category" => {
+              "code" => "at0059",
+              "value" => "Medium",
+              "terminology" => "local"
+            },
+            "total_score" => (int rand 20) + 1,
+        };
     }
 
     if ($assessment->{covid}) {
