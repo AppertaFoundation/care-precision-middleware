@@ -364,12 +364,12 @@ my $handler__cdr = POE::Session->create(
                 (ref($payload) eq 'ARRAY')
                 &&
                 (scalar(@{$payload}) == 2)
-                &&
-                (ref($payload->[0]) eq 'HASH')
-                &&
-                (ref($payload->[1]) eq 'HASH')
-                &&
-                ($payload->[0]->{templateid})
+#                &&
+#                (ref($payload->[0]) eq 'HASH')
+#                &&
+#                (ref($payload->[1]) eq 'HASH')
+#                &&
+#                ($payload->[0]->{templateid})
              )  {
                 my $request = GET($ehrbase.'/ehrbase/rest/openehr/v1/definition/template/adl1.4');
                 $request->header('Accept' => 'application/json');
