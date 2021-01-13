@@ -1412,8 +1412,8 @@ sub summarise_composed_assessment {
             );
 
             {
-                value        => $composed->{news2}->{score}->{total_score},
-                trend        => $composed->{news2}->{score}->{trend},
+                value        => $composed->{news2}->{score},
+                trend        => $composed->{news2}->{trend},
                 clinicalRisk => $clinical_risk[rand @clinical_risk],
             };
         };
