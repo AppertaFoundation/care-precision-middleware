@@ -371,15 +371,9 @@ my $handler__cdr = POE::Session->create(
 #                &&
 #                ($payload->[0]->{templateid})
              )  {
-                my $request = GET($ehrbase.'/ehrbase/rest/openehr/v1/definition/template/adl1.4');
-                $request->header('Accept' => 'application/json');
-
-                $kernel->post(
-                    'webclient',                    # posts to the 'ua' alias
-                    'request',                      # posts to ua's 'request' state
+                $kernel->yield(
                     'create_new_composition',       # which of our states will receive the response
-                    $request,                       # an HTTP::Request object,
-                    [$payload,$packet->{response}]  # a tag or object to pass things like a stash
+                    $payload,$packet->{response}  # a tag or object to pass things like a stash
                 );
             }
             else {
@@ -390,35 +384,9 @@ my $handler__cdr = POE::Session->create(
             }
         },
         'create_new_composition'   =>  sub {
-            my ($kernel,$heap,$request_obj,$response_obj) = @_[KERNEL, HEAP, ARG0, ARG1];
-
-            # Break out various bits and peices from the passed objects
-            my $ehrbase_response    =   $response_obj->[0];
-            my $frontend_request    =   $request_obj->[0];
-            my $passed_objects      =   $request_obj->[1]->[0];
-            my $frontend_response   =   $request_obj->[1]->[1];
-
-            # Check the request templateid is present within the template list on ehrbase
-            # Pass this to avoid bothering with ehrbase at all (it works, but at
-            # this point I'm avoiding any external systems).
+            my ($kernel,$heap,$passed_objects, $frontend_response) = @_[KERNEL, HEAP, ARG0, ARG1];
 
             my $valid_template_test =   do  { 1 };
-
-#                my $templates_accessible    =   decode_json($ehrbase_response->decoded_content());
-#                my $template_requested      =   $passed_objects->[0]->{templateid};
-#                my $template_check_result   =   0;
-#
-#                foreach my $availible_template (@{$templates_accessible}) {
-#                    if (
-#                        ($availible_template->{template_id} eq $template_requested)
-#                    )
-#                    {
-#                        $template_check_result = 1;
-#                        last;
-#                    }
-#                }
-#                $template_check_result
-#            };
 
             # If an invalid template or JSON then return that now
             if (
