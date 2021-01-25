@@ -81,8 +81,8 @@ POE::Component::Client::HTTP->spawn(
 );
 
 my $api_prefix          =   '/c19-alpha/0.0.1';
-my $api_hostname        =   'api.c19.devmode.xyz';
-my $api_hostname_cookie =   '.c19.devmode.xyz';
+my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
+my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 
 my $ehrbase             =   'http://localhost:8002';
 
