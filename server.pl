@@ -969,7 +969,7 @@ my $service_httpd   =   POE::Session->create(
 
             # TODO respond Access-Control-Allow-Origin: * to OPTIONS HACK, also respond to raw options
             $response->header(
-                'Access-Control-Allow-Origin'       => 'https://frontend.c19.devmode.xyz',
+                'Access-Control-Allow-Origin'       => '*',
                 'Access-Control-Allow-Headers'      => 'Content-Type',
                 'Access-Control-Allow-Credentials'  => 'true'
             );
