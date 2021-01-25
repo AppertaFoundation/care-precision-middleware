@@ -21,10 +21,17 @@ RUN cpanm -n \
     URI::QueryParam \
     XML::TreeBuilder
 
-COPY . /opt/C19
+COPY app /opt/C19
 
-WORKDIR /opt/C19
+COPY build-asset/dumb-init /dumb-init
+
+RUN chmod +x /dumb-init
+
+# FIXME, server.pl expects patients.json in PWD
+RUN ln -s /opt/C19/patients.json /patients.json
+
+WORKDIR /
 
 EXPOSE 18080
 
-CMD [ "perl", "./server.pl" ]
+CMD [ "./dumb-init", "perl", "/opt/C19/server.pl" ]
