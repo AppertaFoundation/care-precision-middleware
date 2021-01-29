@@ -414,12 +414,13 @@ my $handler__cdr = POE::Session->create(
             };
 
             my $xml_transformation = sub {
-                my $big_href = shift;
+                my $big_href = shift->{input};
                 my $tt2 = Template->new();
 
                 my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
-                my $xml = $tt2->process('template.xml', { json_path => $json_path });
+                $tt2->process('template.xml', { json_path => $json_path }, \my $xml);
+                return $xml;
             };
 
             $composition_obj->{output}  =   $xml_transformation->($composition_obj);
