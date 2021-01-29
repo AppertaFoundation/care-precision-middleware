@@ -11,7 +11,7 @@ use warnings
 use experimental
     qw(signatures);
 
-# Internal perl modules (debug)
+# Internal perl modules (debug)  
 use Data::Dumper;
 use Carp
     qw( cluck longmess shortmess );
@@ -43,7 +43,7 @@ use File::Spec ();
 use IPC::Cmd ();
 
 # Core perl modules (extended encoding)
-use Encode ();
+use Encode qw(encode_utf8);
 use Digest ();
 use MIME::QuotedPrint ();
 use MIME::Base64 qw(encode_base64 decode_base64);
@@ -62,6 +62,7 @@ use HTML::TreeBuilder::LibXML;
 use Template::Toolkit;
 use Data::UUID;
 use Path::Tiny;
+use HTML::FormatText;
 
 # User option initilization
 my $getopt =    Getopt::Long::Parser->new;
@@ -96,10 +97,10 @@ sub main($env,$argv)
 
         # Store the original value against the uuid
         $stash->{anchors}->{$store_uuid}->{value}   =
-            encode_base64($element->as_text,'');
+            encode_base64(encode_utf8($element->as_trimmed_text),'');
 
         # Find the path to the node
-        $stash->{anchors}->{$store_uuid}->{path}   =
+        $stash->{anchors}->{$store_uuid}->{path}    =
             extrapolate_xml_path($element);
 
         # Replace the original content with the anchor
