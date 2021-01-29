@@ -523,12 +523,12 @@
                                 <value>Breathing indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Use accessory muscles</value>
                                 <defining_code>
                                     <terminology_id>
-                                        <value></value>
+                                        <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0070</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -554,12 +554,12 @@
                                 <value>Circulation indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Coldness</value>
                                 <defining_code>
                                     <terminology_id>
-                                        <value></value>
+                                        <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0098</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -585,12 +585,12 @@
                                 <value>Temperature indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Rigors</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0100</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -601,12 +601,12 @@
                             <value xsi:type="DV_ORDINAL">
                                 <value></value>
                                 <symbol>
-                                    <value></value>
+                                    <value>Lethargic</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0101</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -647,12 +647,12 @@
                                 <value>Agitation indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Anxious</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0104</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -678,12 +678,12 @@
                                 <value>Pain indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Increasing or consisting pain</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0107</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -709,12 +709,12 @@
                                 <value>Trajectory indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>No progress</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0108</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -740,12 +740,12 @@
                                 <value>Patient indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Not feeling well</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0110</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -771,12 +771,12 @@
                                 <value>Nurse subjective indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value></value>
+                                <value>Change in behaviour</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string></code_string>
+                                    <code_string>at0112</code_string>
                                 </defining_code>
                             </value>
                         </items>
