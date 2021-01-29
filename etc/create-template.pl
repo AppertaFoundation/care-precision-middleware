@@ -97,7 +97,7 @@ sub main($env,$argv)
 
         # Store the original value against the uuid
         $stash->{anchors}->{$store_uuid}->{value}   =
-            encode_base64(encode_utf8($element->as_trimmed_text),'');
+            encode_base64(encode_utf8($element->as_text),'');
 
         # Find the path to the node
         $stash->{anchors}->{$store_uuid}->{path}    =
