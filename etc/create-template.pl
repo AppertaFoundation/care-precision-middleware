@@ -170,7 +170,7 @@ sub generate_tt_anchor($anchor_uuid,$anchor_value,$path)
 
 sub extrapolate_xml_path($element) 
 {
-    create_path_identifier($element);
+    create_path_identifier($element->all_attr());
     my @path = ();
     push @path,$element->tag;
     until (not($element->parent))
@@ -182,12 +182,9 @@ sub extrapolate_xml_path($element)
     return \@path;
 }
 
-sub create_path_identifier($element)
+sub create_path_identifier(@keypairs)
 {
-    my $element = {};
-    while (my ($key,$val) = $element->all_attr()) {
-        $element->{$key} = $val;
-    }
-    delete($element->{_content_})
-    die;
+    my %keyval = @keypairs;
+    delete $keyval{_content};
+    say Dumper(%keyval);
 }
