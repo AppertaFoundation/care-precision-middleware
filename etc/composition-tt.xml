@@ -1,0 +1,407 @@
+<composition archetype_node_id="openEHR-EHR-COMPOSITION.encounter.v1" xmlns="http://schemas.openehr.org/v1">
+    <name>
+        <value>[% transmogrify('b3Blbl9lUkVBQ1QtQ2FyZQ==','composition/name/value') %]</value>
+    </name>
+    <uid xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="OBJECT_VERSION_ID">
+        <value>[% transmogrify('NThlMzU2NzItZTE3YS00NGU0LTkwYzEtNjgyNjM3Y2Q4ZTIzOjphODFmNDdjNi1hNzU3LTRlMzQtYjY0NC0zY2NjNjJiNGEwMWM6OjE=','composition/uid/value') %]</value>
+    </uid>
+    <archetype_details>
+        <archetype_id>
+            <value>[% transmogrify('b3BlbkVIUi1FSFItQ09NUE9TSVRJT04uZW5jb3VudGVyLnYx','composition/archetype_details/archetype_id/value') %]</value>
+        </archetype_id>
+        <template_id>
+            <value>[% transmogrify('b3Blbl9lUkVBQ1QtQ2FyZQ==','composition/archetype_details/template_id/value') %]</value>
+        </template_id>
+        <rm_version>[% transmogrify('MS4wLjQ=','composition/archetype_details/rm_version') %]</rm_version>
+    </archetype_details>
+    <language>
+        <terminology_id>
+            <value>[% transmogrify('SVNPXzYzOS0x','composition/language/terminology_id/value') %]</value>
+        </terminology_id>
+        <code_string>[% transmogrify('ZW4=','composition/language/code_string') %]</code_string>
+    </language>
+    <territory>
+        <terminology_id>
+            <value>[% transmogrify('SVNPXzMxNjYtMQ==','composition/territory/terminology_id/value') %]</value>
+        </terminology_id>
+        <code_string>[% transmogrify('R0I=','composition/territory/code_string') %]</code_string>
+    </territory>
+    <category>
+        <value>[% transmogrify('ZXZlbnQ=','composition/category/value') %]</value>
+        <defining_code>
+            <terminology_id>
+                <value>[% transmogrify('b3BlbmVocg==','composition/category/defining_code/terminology_id/value') %]</value>
+            </terminology_id>
+            <code_string>[% transmogrify('NDMz','composition/category/defining_code/code_string') %]</code_string>
+        </defining_code>
+    </category>
+    <composer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PARTY_IDENTIFIED">
+        <name>[% transmogrify('ZGhpLXNjb3RsYW5kX2E4MWY0N2M2LWE3NTctNGUzNC1iNjQ0LTNjY2M2MmI0YTAxYw==','composition/composer/name') %]</name>
+    </composer>
+    <context>
+        <start_time>
+            <value>[% transmogrify('MjAyMC0wOS0xNFQyMDozMDozNS4wNTha','composition/context/start_time/value') %]</value>
+        </start_time>
+        <setting>
+            <value>[% transmogrify('bnVyc2luZyBob21lIGNhcmU=','composition/context/setting/value') %]</value>
+            <defining_code>
+                <terminology_id>
+                    <value>[% transmogrify('b3BlbmVocg==','composition/context/setting/defining_code/terminology_id/value') %]</value>
+                </terminology_id>
+                <code_string>[% transmogrify('MjM3','composition/context/setting/defining_code/code_string') %]</code_string>
+            </defining_code>
+        </setting>
+    </context>
+    
+    <content archetype_node_id="openEHR-EHR-SECTION.adhoc.v1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="SECTION">
+        <name>
+            <value>[% transmogrify('QXNzZXNzbWVudA==','composition/content/name/value') %]</value>
+        </name>
+        <archetype_details>
+            <archetype_id>
+                <value>[% transmogrify('b3BlbkVIUi1FSFItU0VDVElPTi5hZGhvYy52MQ==','composition/content/archetype_details/archetype_id/value') %]</value>
+            </archetype_id>
+            <rm_version>[% transmogrify('MS4wLjQ=','composition/content/archetype_details/rm_version') %]</rm_version>
+        </archetype_details>
+        <items archetype_node_id="openEHR-EHR-OBSERVATION.denwis.v0" xsi:type="OBSERVATION">
+            <name>
+                <value>[% transmogrify('REVOV0lT','composition/content/items/name/value') %]</value>
+            </name>
+            <archetype_details>
+                <archetype_id>
+                    <value>[% transmogrify('b3BlbkVIUi1FSFItT0JTRVJWQVRJT04uZGVud2lzLnYw','composition/content/items/archetype_details/archetype_id/value') %]</value>
+                </archetype_id>
+                <rm_version>[% transmogrify('MS4wLjQ=','composition/content/items/archetype_details/rm_version') %]</rm_version>
+            </archetype_details>
+            <language>
+                <terminology_id>
+                    <value>[% transmogrify('SVNPXzYzOS0x','composition/content/items/language/terminology_id/value') %]</value>
+                </terminology_id>
+                <code_string>[% transmogrify('ZW4=','composition/content/items/language/code_string') %]</code_string>
+            </language>
+            <encoding>
+                <terminology_id>
+                    <value>[% transmogrify('SUFOQV9jaGFyYWN0ZXItc2V0cw==','composition/content/items/encoding/terminology_id/value') %]</value>
+                </terminology_id>
+                <code_string>[% transmogrify('VVRGLTg=','composition/content/items/encoding/code_string') %]</code_string>
+            </encoding>
+            <subject xsi:type="PARTY_SELF">[% transmogrify('','composition/content/items/subject') %]</subject>
+            <data archetype_node_id="at0001">
+                <name>
+                    <value>[% transmogrify('RXZlbnQgU2VyaWVz','composition/content/items/data/name/value') %]</value>
+                </name>
+                <origin>
+                    <value>[% transmogrify('MjAyMC0wOS0xNFQyMDozMDozNS4wNzFa','composition/content/items/data/origin/value') %]</value>
+                </origin>
+                <events archetype_node_id="at0002" xsi:type="POINT_EVENT">
+                    <name>
+                        <value>[% transmogrify('UG9pbnQgaW4gdGltZQ==','composition/content/items/data/events/name/value') %]</value>
+                    </name>
+                    <time>
+                        <value>[% transmogrify('MjAyMC0wOS0xNFQyMDozMDozNS4wNzFa','composition/content/items/data/events/time/value') %]</value>
+                    </time>
+                    <data archetype_node_id="at0003" xsi:type="ITEM_TREE">
+                        <name>
+                            <value>[% transmogrify('VHJlZQ==','composition/content/items/data/events/data/name/value') %]</value>
+                        </name>
+                        <items archetype_node_id="at0028" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTEgQnJlYXRoaW5n','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MA==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Tm8gY2hhbmdlIGluIGJyZWF0aGluZw==','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDMy','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0062" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('QnJlYXRoaW5nIGluZGljYXRvcg==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('U2hvcnQgb2YgYnJlYXRo','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMDY4','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0033" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTIgQ2lyY3VsYXRpb24=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Q2hhbmdlIGluIGNpcmN1bGF0aW9u','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDM2','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0071" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('Q2lyY3VsYXRpb24gaW5kaWNhdG9y','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('Q29sb3VyIGNoYW5nZXM6IHBhbGUsIGdyZXk=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMDk2','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0038" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTMgVGVtcGVyYXR1cmU=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Q2hhbmdlIGluIHRlbXBlcmF0dXJl','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMTA1','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0076" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('VGVtcGVyYXR1cmUgaW5kaWNhdG9y','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('Umlnb3Jz','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTAw','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0043" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTQgTWVudGF0aW9u','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Q2hhbmdlIGluIG1lbnRhdGlvbg==','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDQ1','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0078" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('TWVudGF0aW9uIGluZGljYXRvcg==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('Q29uZnVzZWQ=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTAy','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0047" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTUgQWdpdGF0aW9u','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MA==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Tm8gYWdpdGF0aW9u','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDQ4','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0081" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('QWdpdGF0aW9uIGluZGljYXRvcg==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('UmVzdGxlc3M=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTAz','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0050" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTYgUGFpbg==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MA==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Tm8gY2hhbmdlIGluIHBhaW4=','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDUx','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0084" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UGFpbiBpbmRpY2F0b3I=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('SW5jcmVhc2luZyBvciBjb25zaXN0aW5nIHBhaW4=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTA3','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0053" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTcgVHJhamVjdG9yeQ==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('Q2hhbmdlIGluIHRyYWplY3Rvcnk=','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDU1','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0087" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('VHJhamVjdG9yeSBpbmRpY2F0b3I=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('Tm8gcHJvZ3Jlc3M=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTA4','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0056" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTggUGF0aWVudCBzdWJqZWN0aXZl','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('U3ViamVjdGl2ZSBwYXRpZW50IGluZGljYXRvcg==','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDU4','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0090" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UGF0aWVudCBpbmRpY2F0b3I=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('RmVlbGluZyBvZiBpbXBlbmRpbmcgZG9vbQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTEx','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0059" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('UTkgTnVyc2Ugc3ViamVjdGl2ZQ==','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_ORDINAL">
+                                <value>[% transmogrify('MQ==','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <symbol>
+                                    <value>[% transmogrify('TnVyc2Ugc3ViamVjdGl2ZSBpbmRpY2F0b3I=','composition/content/items/data/events/data/items/value/symbol/value') %]</value>
+                                    <defining_code>
+                                        <terminology_id>
+                                            <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/symbol/defining_code/terminology_id/value') %]</value>
+                                        </terminology_id>
+                                        <code_string>[% transmogrify('YXQwMDYx','composition/content/items/data/events/data/items/value/symbol/defining_code/code_string') %]</code_string>
+                                    </defining_code>
+                                </symbol>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0093" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('TnVyc2Ugc3ViamVjdGl2ZSBpbmRpY2F0b3I=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_CODED_TEXT">
+                                <value>[% transmogrify('RG9lc24ndCBsb29rIGdvb2Q=','composition/content/items/data/events/data/items/value/value') %]</value>
+                                <defining_code>
+                                    <terminology_id>
+                                        <value>[% transmogrify('bG9jYWw=','composition/content/items/data/events/data/items/value/defining_code/terminology_id/value') %]</value>
+                                    </terminology_id>
+                                    <code_string>[% transmogrify('YXQwMTEz','composition/content/items/data/events/data/items/value/defining_code/code_string') %]</code_string>
+                                </defining_code>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0027" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('USAxMCBPdGhlciBjb21tZW50','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_TEXT">
+                                <value>[% transmogrify('USAxMCBPdGhlciBjb21tZW50IDgz','composition/content/items/data/events/data/items/value/value') %]</value>
+                            </value>
+                        </items>
+                        <items archetype_node_id="at0008" xsi:type="ELEMENT">
+                            <name>
+                                <value>[% transmogrify('VG90YWwgc2NvcmU=','composition/content/items/data/events/data/items/name/value') %]</value>
+                            </name>
+                            <value xsi:type="DV_COUNT">
+                                <magnitude>[% transmogrify('MA==','composition/content/items/data/events/data/items/value/magnitude') %]</magnitude>
+                            </value>
+                        </items>
+                    </data>
+                </events>
+            </data>
+        </items>
+    </content>
+</composition>
