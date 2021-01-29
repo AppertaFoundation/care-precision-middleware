@@ -120,7 +120,7 @@ sub main($env,$argv)
                 $stash->{anchors}->{$anchor_key}->{value};
             my $path            =
                 $stash->{anchors}->{$anchor_key}->{path};
-            ($stage2_xml) =~ s/$anchor_key/generate_tt_anchor($anchor_key,$anchor_value,$path)/eg;
+            ($stage2_xml) =~ s/$anchor_key/generate_tt_anchor($anchor_key,$anchor_value,$path)/e;
         }
 
         $stash->{stage2_xml} = $stage2_xml;
