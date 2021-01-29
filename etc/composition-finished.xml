@@ -506,14 +506,14 @@
                                 <value>Q1 Breathing</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>1</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>Change in breathing</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0031</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -537,14 +537,14 @@
                                 <value>Q2 Circulation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>0</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>No change in circulation</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0037</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -568,14 +568,14 @@
                                 <value>Q3 Temperature</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>0</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>No change in temperature</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0042</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -630,14 +630,14 @@
                                 <value>Q5 Agitation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>0</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>No agitation</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0048</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -661,14 +661,14 @@
                                 <value>Q6 Pain</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>1</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>Change in pain</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0052</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -692,14 +692,14 @@
                                 <value>Q7 Trajectory</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>1</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>Change in trajectory</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0055</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -723,14 +723,14 @@
                                 <value>Q8 Patient subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>0</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>No subjective patient indicator</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0057</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -754,14 +754,14 @@
                                 <value>Q9 Nurse subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value></value>
+                                <value>1</value>
                                 <symbol>
-                                    <value></value>
+                                    <value>Nurse subjective indicator</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string></code_string>
+                                        <code_string>at0061</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -785,7 +785,7 @@
                                 <value>Q 10 Other comment</value>
                             </name>
                             <value xsi:type="DV_TEXT">
-                                <value></value>
+                                <value>Just off her food</value>
                             </value>
                         </items>
                         <items xsi:type="ELEMENT" archetype_node_id="at0008">
@@ -793,7 +793,7 @@
                                 <value>Total score</value>
                             </name>
                             <value xsi:type="DV_COUNT">
-                                <magnitude></magnitude>
+                                <magnitude>3</magnitude>
                             </value>
                         </items>
                     </data>

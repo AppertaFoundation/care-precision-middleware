@@ -10,6 +10,7 @@ use warnings
     FATAL => 'uninitialized';
 use experimental
     qw(signatures);
+no indirect;
 
 # Internal perl modules (debug)  
 use Data::Dumper;
@@ -60,6 +61,7 @@ use Template;
 use Data::UUID;
 use Path::Tiny;
 use JSON::Pointer;
+use JSON::MaybeXS;
 
 # User option initilization
 my $getopt =    Getopt::Long::Parser->new;
@@ -83,7 +85,7 @@ sub main($env,$argv)
         exit 1;
     };
 
-    my $composition_obj = do { local $/; <> };
+    my $composition_obj = decode_json(do { local $/; <> });
 
     my $xml_transformation = sub {
         my $big_href = shift;
