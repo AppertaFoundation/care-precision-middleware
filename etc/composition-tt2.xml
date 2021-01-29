@@ -314,14 +314,14 @@
                                 <value>Assessment</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/background/frailty/|ordinal') %]</value>
+                                <value>[% json_path('/1/background/frailty/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/background/frailty/|value') %]</value>
+                                    <value>[% json_path('/1/background/frailty/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/background/frailty/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/background/frailty/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -510,14 +510,14 @@
                                 <value>Q1 Breathing</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q1_breathing/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q1_breathing/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q1_breathing/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q1_breathing/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q1_breathing/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q1_breathing/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -527,12 +527,12 @@
                                 <value>Breathing indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/breathing_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/breathing_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
-                                        <value>[% json_path('/1/denwis/breathing_indicator/|terminology') %]</value>
+                                        <value>[% json_path('/1/denwis/breathing_indicator/terminology') %]</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/breathing_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/breathing_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -541,14 +541,14 @@
                                 <value>Q2 Circulation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q2_circulation/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q2_circulation/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q2_circulation/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q2_circulation/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q2_circulation/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q2_circulation/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -558,12 +558,12 @@
                                 <value>Circulation indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/circulation_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/circulation_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
-                                        <value>[% json_path('/1/denwis/circulation_indicator/|terminology') %]</value>
+                                        <value>[% json_path('/1/denwis/circulation_indicator/terminology') %]</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/circulation_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/circulation_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -572,14 +572,14 @@
                                 <value>Q3 Temperature</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q3_temperature/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q3_temperature/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q3_temperature/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q3_temperature/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q3_temperature/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q3_temperature/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -589,12 +589,12 @@
                                 <value>Temperature indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/temperature_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/temperature_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/temperature_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/temperature_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -603,14 +603,14 @@
                                 <value>Q4 Mentation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/mentation_indicator/|oridnal') %]</value>
+                                <value>[% json_path('/1/denwis/mentation_indicator/oridnal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/mentation_indicator/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/mentation_indicator/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/mentation_indicator/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/mentation_indicator/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -634,14 +634,14 @@
                                 <value>Q5 Agitation</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q5_agitation/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q5_agitation/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q5_agitation/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q5_agitation/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q5_agitation/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q5_agitation/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -651,12 +651,12 @@
                                 <value>Agitation indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/agitation_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/agitation_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/agitation_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/agitation_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -665,14 +665,14 @@
                                 <value>Q6 Pain</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q6_pain/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q6_pain/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q6_pain/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q6_pain/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q6_pain/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q6_pain/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -682,12 +682,12 @@
                                 <value>Pain indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/pain_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/pain_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/pain_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/pain_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -696,14 +696,14 @@
                                 <value>Q7 Trajectory</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q7_trajectory/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q7_trajectory/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q7_trajectory/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q7_trajectory/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q7_trajectory/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q7_trajectory/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -713,12 +713,12 @@
                                 <value>Trajectory indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/trajectory_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/trajectory_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/trajectory_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/trajectory_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -727,14 +727,14 @@
                                 <value>Q8 Patient subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q8_patient_subjective/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q8_patient_subjective/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q8_patient_subjective/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q8_patient_subjective/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q8_patient_subjective/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q8_patient_subjective/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -744,12 +744,12 @@
                                 <value>Patient indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/patient_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/patient_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/patient_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/patient_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
@@ -758,14 +758,14 @@
                                 <value>Q9 Nurse subjective</value>
                             </name>
                             <value xsi:type="DV_ORDINAL">
-                                <value>[% json_path('/1/denwis/q9_nurse_subjective/|ordinal') %]</value>
+                                <value>[% json_path('/1/denwis/q9_nurse_subjective/ordinal') %]</value>
                                 <symbol>
-                                    <value>[% json_path('/1/denwis/q9_nurse_subjective/|value') %]</value>
+                                    <value>[% json_path('/1/denwis/q9_nurse_subjective/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/denwis/q9_nurse_subjective/|code') %]</code_string>
+                                        <code_string>[% json_path('/1/denwis/q9_nurse_subjective/code') %]</code_string>
                                     </defining_code>
                                 </symbol>
                             </value>
@@ -775,12 +775,12 @@
                                 <value>Nurse subjective indicator</value>
                             </name>
                             <value xsi:type="DV_CODED_TEXT">
-                                <value>[% json_path('/1/denwis/nurse_subjective_indicator/|value') %]</value>
+                                <value>[% json_path('/1/denwis/nurse_subjective_indicator/value') %]</value>
                                 <defining_code>
                                     <terminology_id>
                                         <value>local</value>
                                     </terminology_id>
-                                    <code_string>[% json_path('/1/denwis/nurse_subjective_indicator/|code') %]</code_string>
+                                    <code_string>[% json_path('/1/denwis/nurse_subjective_indicator/code') %]</code_string>
                                 </defining_code>
                             </value>
                         </items>
