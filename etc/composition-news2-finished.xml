@@ -42,7 +42,7 @@
             <value>2021-01-31T19:26:29Z</value>
         </start_time>
         <setting>
-            <value>nursing home</value>
+            <value>nursing home care</value>
             <defining_code>
                 <terminology_id>
                     <value>openehr</value>
