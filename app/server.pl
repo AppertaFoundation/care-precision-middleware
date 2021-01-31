@@ -36,6 +36,7 @@ use Storable qw( dclone );
 use Data::Search;
 use DateTime;
 use XML::TreeBuilder;
+use Path::Tiny;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -60,6 +61,9 @@ my $global      = {
     },
     compose     =>  {},
     uuids       =>  {},
+    templates   =>  {
+        input       =>  file(template_in.tt)->slurp_utf8
+    }
 };
 
 my $pool = POE::Component::Client::Keepalive->new(
