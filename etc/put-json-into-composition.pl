@@ -57,6 +57,7 @@ use Getopt::Long ();
 use Module::Load ();
 use Env ();
 
+use DateTime;
 use Template;
 use Data::UUID;
 use Path::Tiny;
@@ -69,7 +70,7 @@ my $getopt =    Getopt::Long::Parser->new;
 # Entrypoint, will exit with the return of main
 exit do { main(\%ENV,\@ARGV) || 0 };
 
-sub main($env,$argv) 
+sub main($env,$argv)
 {
     my ($inxml,$outxml);
 
@@ -85,15 +86,23 @@ sub main($env,$argv)
         exit 1;
     };
 
+    my $uuid = Data::UUID->new;
     my $composition_obj = decode_json(do { local $/; <> });
 
     my $xml_transformation = sub {
         my $big_href = shift;
-        my $tt2 = Template->new();
+        my $tt2 = Template->new({
+            ENCODING => 'utf8'
+        });
+
+        $big_href->[1]->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
         my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
-        $tt2->process($inxml, { json_path => $json_path }, \my $out) || die $tt2->error;
+        $tt2->process($inxml, {
+            json_path => $json_path,
+            generate_uuid => sub { $uuid->create_str }
+        }, \my $out) || die $tt2->error;
         $out;
     };
 

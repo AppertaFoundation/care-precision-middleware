@@ -1,4 +1,4 @@
-[% doc_date = json_path('/1/header/start_time') %]
+[%- doc_date = json_path('/1/header/start_time') -%]
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <composition xmlns="http://schemas.openehr.org/v1" archetype_node_id="openEHR-EHR-COMPOSITION.encounter.v1">
     <name>
