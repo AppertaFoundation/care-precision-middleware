@@ -1,5 +1,7 @@
 [
-    {},
+    {
+        "templateid": "open_eREACT-Care"
+    },
     {
         "header": {
             "composer": {
