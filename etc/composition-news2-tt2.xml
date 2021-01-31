@@ -352,7 +352,7 @@
                                 </name>
                                 <!-- FIXME: respirations is just a single value in JSON -->
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/nes2/respirations') %]</magnitude>
+                                    <magnitude>[% json_path('/1/news2/respirations') %]</magnitude>
                                     <units>/min</units>
                                     <precision>0</precision>
                                 </value>
