@@ -88,7 +88,7 @@
                     <value>Temperature</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>5478a4b6-eee9-470b-9eee-b85df23c6c1f</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -114,7 +114,7 @@
                         <value>History</value>
                     </name>
                     <origin>
-                        <value>2020-11-17T16:34:03.872Z</value>
+                        <value>[% doc_date %]</value>
                     </origin>
                     <events xsi:type="POINT_EVENT" archetype_node_id="at0003">
                         <name>
@@ -132,7 +132,7 @@
                                     <value>Temperature</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/temperature/|magnitude') %]</magnitude>
+                                    <magnitude>[% json_path('/1/news2/temperature/magnitude') %]</magnitude>
                                     <!-- FIXME: JSON has °C here -->
                                     <units>Cel</units>
                                     <!-- FIXME: not represented in JSON -->
@@ -149,7 +149,7 @@
                     <value>Pulse oximetry</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>27bc470f-2ef9-418b-a7e5-b992fb2918db</value>
+                    <value>[% generate_uuid( ) %] </value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -193,7 +193,7 @@
                                     <value>SpO₂</value>
                                 </name>
                                 <value xsi:type="DV_PROPORTION">
-                                    <numerator>80.0</numerator>
+                                    <numerator>[% json_path('/1/news2/sp02') %]</numerator>
                                     <denominator>100.0</denominator>
                                     <type>2</type>
                                 </value>
@@ -218,8 +218,8 @@
                                         <value>Flow rate</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/1/news2/inspired_oxygen/flow_rate/|magnitude') %]</magnitude>
-                                        <units>[% json_path('/1/news2/inspired_oxygen/flow_rate/|unit') %]</units>
+                                        <magnitude>[% json_path('/1/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
+                                        <units>[% json_path('/1/news2/inspired_oxygen/flow_rate/unit') %]</units>
                                         <!-- FIXME: not represented in JSON -->
                                         <precision>2</precision>
                                     </value>
@@ -242,7 +242,7 @@
                     <value>Pulse</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>9dbeea5a-f9b6-40fb-8500-b6f2715cdaf6</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -293,7 +293,7 @@
                                     </defining_code>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>80.0</magnitude>
+                                    <magnitude>[% json_path('/1/news2/pulse') %]</magnitude>
                                     <units>/min</units>
                                     <precision>0</precision>
                                 </value>
@@ -307,7 +307,7 @@
                     <value>Respirations</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>215fef69-cd5f-4b38-b620-06daa506cfba</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -352,7 +352,7 @@
                                 </name>
                                 <!-- FIXME: respirations is just a single value in JSON -->
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>110.0</magnitude>
+                                    <magnitude>[% json_path('/1/nes2/respirations') %]</magnitude>
                                     <units>/min</units>
                                     <precision>0</precision>
                                 </value>
@@ -366,7 +366,7 @@
                     <value>ACVPU scale</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>2b815a9c-fc6e-455b-8a10-0fd5a93a05bf</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -410,12 +410,12 @@
                                     <value>ACVPU</value>
                                 </name>
                                 <value xsi:type="DV_CODED_TEXT">
-                                    <value>Unresponsive</value>
+                                    <value>[% json_path('/1/news2/acvpu/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>at0008</code_string>
+                                        <code_string>[% json_path('/1/news2/acvpu/code') %]</code_string>
                                     </defining_code>
                                 </value>
                             </items>
@@ -428,7 +428,7 @@
                     <value>Blood pressure</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>d73d5cd2-69c3-4247-bebd-927917fd557a</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -472,7 +472,7 @@
                                     <value>Systolic</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>96.0</magnitude>
+                                    <magnitude>[% json_path('/1/news2/systolic') %]</magnitude>
                                     <units>mm[Hg]</units>
                                     <precision>0</precision>
                                 </value>
@@ -483,7 +483,7 @@
                                     <value>Diastolic</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>60.0</magnitude>
+                                    <magnitude>[% json_path('/1/news2/diastolic') %]</magnitude>
                                     <units>mm[Hg]</units>
                                     <precision>0</precision>
                                 </value>
@@ -498,7 +498,7 @@
                     <value>NEWS2 Score</value>
                 </name>
                 <uid xsi:type="HIER_OBJECT_ID">
-                    <value>e390f774-33ab-4797-884b-cb6f71153c2c</value>
+                    <value>[% generate_uuid() %]</value>
                 </uid>
                 <archetype_details>
                     <archetype_id>
@@ -707,7 +707,7 @@
                 <value>Recommendation</value>
             </name>
             <uid xsi:type="HIER_OBJECT_ID">
-                <value>9b93cfc6-7c6d-4025-afb6-d65e3c5898c2</value>
+                <value>[% generate_uuid() %]</value>
             </uid>
             <archetype_details>
                 <archetype_id>
