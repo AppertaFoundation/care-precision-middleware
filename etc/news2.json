@@ -3,6 +3,9 @@
         "templateid": "open_eREACT-Care"
     },
     {
+        "situation": {
+            "uuid": "1234abcd"
+        },
         "header": {
             "composer": {
                 "name": "J.S. Bach"
