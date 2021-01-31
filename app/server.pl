@@ -60,10 +60,7 @@ my $global      = {
         'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
     },
     compose     =>  {},
-    uuids       =>  {},
-    templates   =>  {
-        input       =>  file(template_in.tt)->slurp_utf8
-    }
+    uuids       =>  {}
 };
 
 my $pool = POE::Component::Client::Keepalive->new(
