@@ -415,7 +415,11 @@ my $handler__cdr = POE::Session->create(
 
             my $xml_transformation = sub {
                 my $big_href = shift->{input};
-                my $tt2 = Template->new();
+                my $tt2 = Template->new({
+                    ENCODING => 'utf8'
+                });
+
+                $big_href->[1]->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
                 my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
