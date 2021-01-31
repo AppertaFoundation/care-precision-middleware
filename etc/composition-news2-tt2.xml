@@ -493,13 +493,9 @@
                 </data>
             </items>
             <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.news2.v1">
-                <!-- FIXME: dunno what this is in the JSON -->
                 <name>
                     <value>NEWS2 Score</value>
                 </name>
-                <uid xsi:type="HIER_OBJECT_ID">
-                    <value>[% generate_uuid() %]</value>
-                </uid>
                 <archetype_details>
                     <archetype_id>
                         <value>openEHR-EHR-OBSERVATION.news2.v1</value>
@@ -524,14 +520,14 @@
                         <value>Event Series</value>
                     </name>
                     <origin>
-                        <value>2020-11-17T16:34:03.875Z</value>
+                        <value>2020-09-14T20:30:35.08Z</value>
                     </origin>
                     <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
                         <name>
                             <value>Any point in time event</value>
                         </name>
                         <time>
-                            <value>[% doc_date %]</value>
+                            <value>2020-09-14T20:30:35.08Z</value>
                         </time>
                         <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
                             <name>
@@ -544,12 +540,12 @@
                                 <value xsi:type="DV_ORDINAL">
                                     <value>3</value>
                                     <symbol>
-                                        <value>≤8</value>
+                                        <value>≥25</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>at0021</code_string>
+                                            <code_string>at0064</code_string>
                                         </defining_code>
                                     </symbol>
                                 </value>
@@ -561,7 +557,7 @@
                                 <value xsi:type="DV_ORDINAL">
                                     <value>0</value>
                                     <symbol>
-                                        <value>[% json_path('/1/news2/sp02') %]</value>
+                                        <value>≥96</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
@@ -571,7 +567,6 @@
                                     </symbol>
                                 </value>
                             </items>
-                            <!-- FIXME: doesn't appear to be in the JSON -->
                             <items xsi:type="ELEMENT" archetype_node_id="at0034">
                                 <name>
                                     <value>Air or oxygen?</value>
@@ -594,14 +589,14 @@
                                     <value>Systolic blood pressure</value>
                                 </name>
                                 <value xsi:type="DV_ORDINAL">
-                                    <value>3</value>
+                                    <value>1</value>
                                     <symbol>
-                                        <value>[% json_path('/1/news2/systolic') %]</value>
+                                        <value>101-110</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>at0017</code_string>
+                                            <code_string>at0015</code_string>
                                         </defining_code>
                                     </symbol>
                                 </value>
@@ -611,38 +606,35 @@
                                     <value>Pulse</value>
                                 </name>
                                 <value xsi:type="DV_ORDINAL">
-                                    <value>1</value>
+                                    <value>2</value>
                                     <symbol>
-                                        <value>[% json_path('/1/news2/pulse') %]</value>
+                                        <value>111-130</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>at0012</code_string>
+                                            <code_string>at0011</code_string>
                                         </defining_code>
                                     </symbol>
                                 </value>
                             </items>
-                            <!-- FIXME: doesn't seem to be in the JSON -->
                             <items xsi:type="ELEMENT" archetype_node_id="at0008">
                                 <name>
                                     <value>Consciousness</value>
                                 </name>
                                 <value xsi:type="DV_ORDINAL">
-                                    <value>0</value>
+                                    <value>3</value>
                                     <symbol>
-                                        <value>Alert</value>
+                                        <value>C, V, P or U</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>at0024</code_string>
+                                            <code_string>at0025</code_string>
                                         </defining_code>
                                     </symbol>
                                 </value>
                             </items>
-
-                            <!-- FIXME: We already have a temperature -->
                             <items xsi:type="ELEMENT" archetype_node_id="at0007">
                                 <name>
                                     <value>Temperature</value>
@@ -660,29 +652,25 @@
                                     </symbol>
                                 </value>
                             </items>
-
-                            <!-- FIXME: don't know what this is -->
                             <items xsi:type="ELEMENT" archetype_node_id="at0028">
                                 <name>
                                     <value>Total score</value>
                                 </name>
                                 <value xsi:type="DV_COUNT">
-                                    <magnitude>6</magnitude>
+                                    <magnitude>8</magnitude>
                                 </value>
                             </items>
-
-                            <!-- FIXME: don't know what this is -->
                             <items xsi:type="ELEMENT" archetype_node_id="at0056">
                                 <name>
                                     <value>Clinical risk category</value>
                                 </name>
                                 <value xsi:type="DV_CODED_TEXT">
-                                    <value>High</value>
+                                    <value>Medium</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>at0060</code_string>
+                                        <code_string>at0059</code_string>
                                     </defining_code>
                                 </value>
                             </items>
