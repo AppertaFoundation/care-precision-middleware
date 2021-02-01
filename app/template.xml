@@ -43,7 +43,7 @@
             <value>[% doc_date %]</value>
         </start_time>
         <setting>
-            <value>nursing home</value>
+            <value>nursing home care</value>
             <defining_code>
                 <terminology_id>
                     <value>openehr</value>
