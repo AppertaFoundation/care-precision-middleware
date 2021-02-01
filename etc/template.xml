@@ -133,7 +133,7 @@
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
                                     <magnitude>[% json_path('/1/news2/temperature/magnitude') %]</magnitude>
-                                    <!-- FIXME: JSON has °C here -->
+                                    <!-- FIXME: JSON has C here -->
                                     <units>Cel</units>
                                     <!-- FIXME: not represented in JSON -->
                                     <precision>1</precision>
@@ -190,7 +190,7 @@
                             </name>
                             <items xsi:type="ELEMENT" archetype_node_id="at0006">
                                 <name>
-                                    <value>SpO₂</value>
+                                    <value>SpO</value>
                                 </name>
                                 <value xsi:type="DV_PROPORTION">
                                     <numerator>[% json_path('/1/news2/spO2') %]</numerator>
@@ -540,7 +540,7 @@
                                 <value xsi:type="DV_ORDINAL">
                                     <value>3</value>
                                     <symbol>
-                                        <value>≥25</value>
+                                        <value>25</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
@@ -552,12 +552,12 @@
                             </items>
                             <items xsi:type="ELEMENT" archetype_node_id="at0029">
                                 <name>
-                                    <value>SpO₂ Scale 1</value>
+                                    <value>SpO Scale 1</value>
                                 </name>
                                 <value xsi:type="DV_ORDINAL">
                                     <value>0</value>
                                     <symbol>
-                                        <value>≥96</value>
+                                        <value>96</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
