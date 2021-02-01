@@ -438,7 +438,7 @@ my $handler__cdr = POE::Session->create(
             my $req_url = 'http://127.0.0.1:6060/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition';
             warn "req: $req_url";
 
-            my $tx = $ua->post($req_url, { Accept => '*/*' } => $composition_obj->{output});
+            my $tx = $ua->post($req_url, { Accept => '*/*' } => encode_utf8($composition_obj->{output}));
             my $response = $tx->res;
             warn $response->code;
 
