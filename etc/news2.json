@@ -4,36 +4,38 @@
     },
     {
         "situation": {
-            "uuid": "1234abcd"
         },
         "header": {
+            "uuid": "1234abcd",
             "composer": {
                 "name": "J.S. Bach"
             },
             "healthcare_facility": "Opus MD"
         },
-        "news2":{
-            "temperature":{
-                "magnitude":90.7,
-                "unit":"°C"
-            },
-            "spO2":91.0,
-            "inspired_oxygen":{
-                "flow_rate":{
-                    "magnitude":23.5,
-                    "unit":"l/min"
+        "assessment": {
+            "news2":{
+                "temperature":{
+                    "magnitude":90.7,
+                    "unit":"°C"
                 },
-                "method_of_oxygen_delivery":"Mask"
-            },
-            "pulse":110,
-            "respirations":34.4,
-            "acvpu":{
-                "code":"at0015",
-                "value":"Confusion"
-            },
-            "systolic":98,
-            "diastolic":58,
-            "total_score":5
+                "spO2":91.0,
+                "inspired_oxygen":{
+                    "flow_rate":{
+                        "magnitude":23.5,
+                        "unit":"l/min"
+                    },
+                    "method_of_oxygen_delivery":"Mask"
+                },
+                "pulse":110,
+                "respirations":34.4,
+                "acvpu":{
+                    "code":"at0015",
+                    "value":"Confusion"
+                },
+                "systolic":98,
+                "diastolic":58,
+                "total_score":5
+            }
         }
     }
 ]
