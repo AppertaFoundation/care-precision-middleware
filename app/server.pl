@@ -429,7 +429,7 @@ my $handler__cdr = POE::Session->create(
             }
 
             # We have a valid templateid request lets proceed with creating a composition!
-            my $patient_uuid = $passed_objects->[1]->{situation}->{uuid};
+            my $patient_uuid = $passed_objects->[1]->{header}->{uuid};
 
             # Create a place to put everything we need for ease and clarity
             my $uuid = $uuid->to_string($uuid->create());
