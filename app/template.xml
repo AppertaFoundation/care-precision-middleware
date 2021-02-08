@@ -132,7 +132,7 @@
                                     <value>Temperature</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/temperature/magnitude') %]</magnitude>
+                                    <magnitude>[% json_path('/1/assessment/news2/temperature/magnitude') %]</magnitude>
                                     <!-- FIXME: JSON has °C here -->
                                     <units>Cel</units>
                                     <!-- FIXME: not represented in JSON -->
@@ -193,7 +193,7 @@
                                     <value>SpO₂</value>
                                 </name>
                                 <value xsi:type="DV_PROPORTION">
-                                    <numerator>[% json_path('/1/news2/spO2') %]</numerator>
+                                    <numerator>[% json_path('/1/assessment/news2/spO2') %]</numerator>
                                     <denominator>100.0</denominator>
                                     <type>2</type>
                                 </value>
@@ -218,8 +218,8 @@
                                         <value>Flow rate</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/1/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
-                                        <units>[% json_path('/1/news2/inspired_oxygen/flow_rate/unit') %]</units>
+                                        <magnitude>[% json_path('/1/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
+                                        <units>[% json_path('/1/assessment/news2/inspired_oxygen/flow_rate/unit') %]</units>
                                         <!-- FIXME: not represented in JSON -->
                                         <precision>2</precision>
                                     </value>
@@ -229,7 +229,7 @@
                                         <value>Method of oxygen delivery</value>
                                     </name>
                                     <value xsi:type="DV_TEXT">
-                                        <value>[% json_path('/1/news2/inspired_oxygen/method_of_oxygen_delivery') %]</value>
+                                        <value>[% json_path('/1/assessment/news2/inspired_oxygen/method_of_oxygen_delivery') %]</value>
                                     </value>
                                 </items>
                             </items>
@@ -293,7 +293,7 @@
                                     </defining_code>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/pulse') %]</magnitude>
+                                    <magnitude>[% json_path('/1/assessment/news2/pulse') %]</magnitude>
                                     <units>/min</units>
                                     <precision>0</precision>
                                 </value>
@@ -352,7 +352,7 @@
                                 </name>
                                 <!-- FIXME: respirations is just a single value in JSON -->
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/respirations') %]</magnitude>
+                                    <magnitude>[% json_path('/1/assessment/news2/respirations') %]</magnitude>
                                     <units>/min</units>
                                     <precision>0</precision>
                                 </value>
@@ -410,12 +410,12 @@
                                     <value>ACVPU</value>
                                 </name>
                                 <value xsi:type="DV_CODED_TEXT">
-                                    <value>[% json_path('/1/news2/acvpu/value') %]</value>
+                                    <value>[% json_path('/1/assessment/news2/acvpu/value') %]</value>
                                     <defining_code>
                                         <terminology_id>
                                             <value>local</value>
                                         </terminology_id>
-                                        <code_string>[% json_path('/1/news2/acvpu/code') %]</code_string>
+                                        <code_string>[% json_path('/1/assessment/news2/acvpu/code') %]</code_string>
                                     </defining_code>
                                 </value>
                             </items>
@@ -472,7 +472,7 @@
                                     <value>Systolic</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/systolic') %]</magnitude>
+                                    <magnitude>[% json_path('/1/assessment/news2/systolic') %]</magnitude>
                                     <units>mm[Hg]</units>
                                     <precision>0</precision>
                                 </value>
@@ -483,7 +483,7 @@
                                     <value>Diastolic</value>
                                 </name>
                                 <value xsi:type="DV_QUANTITY">
-                                    <magnitude>[% json_path('/1/news2/diastolic') %]</magnitude>
+                                    <magnitude>[% json_path('/1/assessment/news2/diastolic') %]</magnitude>
                                     <units>mm[Hg]</units>
                                     <precision>0</precision>
                                 </value>
