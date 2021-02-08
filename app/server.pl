@@ -32,7 +32,6 @@ use Try::Tiny;
 use JSON::MaybeXS ':all';
 use Data::UUID;
 use DateTime;
-use File::Slurp;
 use Storable qw( dclone );
 use Data::Search;
 use DateTime;
@@ -42,6 +41,8 @@ use Template;
 use JSON::Pointer;
 
 use Mojo::UserAgent;
+use LWP::UserAgent;
+use HTTP::Request;
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -88,6 +89,28 @@ my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAM
 my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 
 my $ehrbase             =   'http://127.0.0.1:38382';
+#my $ehrbase             =   'http://127.0.0.1:6767';
+
+my $create_ehr_body = {
+    "_type"             =>  "EHR_STATUS",
+    "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
+    "name"              =>  {
+        "value" =>  "EHR Status"
+    },
+    "subject"           =>  {
+        "external_ref"      =>  {
+        "id"                    =>  {
+            "_type"                 =>  "GENERIC_ID",
+            "value"                 =>  "nhs_number",
+            "scheme"                =>  "id_scheme"
+        },
+        "namespace" =>  "nhs_number",
+        "type"      =>  "PERSON"
+        }
+    },
+    "is_modifiable" =>  JSON::MaybeXS::true,
+    "is_queryable"  =>  JSON::MaybeXS::true
+};
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -434,8 +457,8 @@ my $handler__cdr = POE::Session->create(
 
             my $ua = Mojo::UserAgent->new;
 
+            say STDERR "TODO: Should not be hardcoded req_url!";
             my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition';
-            warn "req: $req_url";
 
             my $tx = $ua->post($req_url, {
                     'Content-Type' => 'application/xml',
@@ -561,13 +584,12 @@ my $handler__meta_demographics_patient = POE::Session->create(
             $kernel->alias_set($heap->{myid});
             $kernel->post('service::main','register_handler',$heap->{myid});
 
-            my $patient_list = decode_json(read_file('patients.json'));
+            my $patient_list = decode_json(path('patients.json')->slurp);
 
             my @commit_list;
 
             # Simplify names, add assessments and digitize date of birth
             MAIN: foreach my $patient (@{$patient_list->{entry}}) {
-                $patient->{_uuid} = $uuid->to_string($uuid->create());
                 $patient->{_compositions} = [];
 
                 my $name_res    =   $patient->{resource}->{name};
@@ -593,7 +615,6 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # Overwrite the old style name with a normal one
                 $patient->{resource}->{name} = join(' ',@{$name_use});
 
-
                 # Move the nhs-number to make it easier to search
                 $patient->{resource}->{nhsnumber}   = do {
                     my $return;
@@ -606,6 +627,73 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         }
                     }
                     $return
+                };
+
+                # If there is no nhs number we do not want it
+                if (!$patient->{resource}->{nhsnumber}) {
+                    next MAIN;
+                }
+
+                my $patient_exist = do {
+                    my $nhs = $patient->{resource}->{nhsnumber}||0;
+                    my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr'
+                    .   "?subject_id=$nhs"
+                    .   "&subject_namespace=nhs_number";
+                    
+                    my $request = GET($req_url);
+                    $request->header('Accept' => 'application/json');
+                    $request->header('Content-Type' => 'application/json');
+                    $request->content();
+
+                    my $ua = LWP::UserAgent->new();
+                    my $res = $ua->request($request);
+
+                    my $return;
+                    if ($res->code == 200) {
+                        my $content = decode_json($res->content());
+                        $return = $content->{ehr_id}->{value};
+                    }
+                    elsif ($res->code == 404)   {
+                        $return = undef;
+                    }
+                    else {
+                        warn "non captured response: $req_url";
+                    }
+
+                    $return
+                };
+
+                # Adjust the base profile to add the correct name
+                my $create_ehr_body_clone = dclone($create_ehr_body);
+                $create_ehr_body_clone->{name}->{value}
+                    =   $patient->{resource}->{name};
+                $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
+                    =   $patient->{resource}->{nhsnumber};
+
+                # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+                $patient->{_uuid} = do {
+                    say STDERR "TODO: Should not be hardcoded req_url!";
+                    my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr';
+
+                    if (!defined $patient_exist) {
+                        my $request = POST($req_url);
+                        $request->header('Accept' => 'application/json');
+                        $request->header('Content-Type' => 'application/json');
+                        $request->content(encode_json($create_ehr_body_clone));
+
+                        my $ua = LWP::UserAgent->new();
+                        my $res = $ua->request($request);
+
+                        if ($res->code != 204)  {
+                            die "Failure creating patient!";
+                        }
+
+                        my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+                        $patient_exist = $uuid_extract
+                    }
+
+                    $patient_exist
                 };
 
                 # Convert Date of birth to digitally calculable date
