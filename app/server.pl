@@ -432,9 +432,9 @@ my $handler__cdr = POE::Session->create(
             my $patient_uuid = $passed_objects->[1]->{header}->{uuid};
 
             # Create a place to put everything we need for ease and clarity
-            my $uuid = $uuid->to_string($uuid->create());
+            my $composition_uuid = $uuid->to_string($uuid->create());
             my $composition_obj =   {
-                uuid    =>  $uuid,
+                uuid    =>  $composition_uuid,
                 #base    =>  join('',read_file('composition.xml')),
                 input   =>  $passed_objects
             };
@@ -449,7 +449,11 @@ my $handler__cdr = POE::Session->create(
 
                 my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
-                $tt2->process('template.xml', { json_path => $json_path }, \my $xml);
+                $tt2->process('template.xml', {
+                    json_path => $json_path,
+                    generate_uuid => sub { $uuid->to_string($uuid->create) } },
+                \my $xml) or die $tt2->error;
+
                 return $xml;
             };
 
