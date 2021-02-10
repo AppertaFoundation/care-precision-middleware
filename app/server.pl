@@ -387,17 +387,9 @@ my $handler__cdr = POE::Session->create(
             };
 
             if (
-                ($payload) 
-                && 
-                (ref($payload) eq 'ARRAY')
+                ($payload)
                 &&
-                (scalar(@{$payload}) == 2)
-#                &&
-#                (ref($payload->[0]) eq 'HASH')
-#                &&
-#                (ref($payload->[1]) eq 'HASH')
-#                &&
-#                ($payload->[0]->{templateid})
+                (ref($payload) eq 'HASH')
              )  {
                 $kernel->yield(
                     'create_new_composition',       # which of our states will receive the response
@@ -419,8 +411,7 @@ my $handler__cdr = POE::Session->create(
             # If an invalid template or JSON then return that now
             if (
                 $valid_template_test == 0
-                || !$passed_objects->[1] 
-                || ref($passed_objects->[1]) ne 'HASH'
+                || ref($passed_objects) ne 'HASH'
             ) {
                 $frontend_response->content("Invalid request");
                 $frontend_response->code(400);
@@ -429,7 +420,7 @@ my $handler__cdr = POE::Session->create(
             }
 
             # We have a valid templateid request lets proceed with creating a composition!
-            my $patient_uuid = $passed_objects->[1]->{header}->{uuid};
+            my $patient_uuid = $passed_objects->{header}->{uuid};
 
             # Create a place to put everything we need for ease and clarity
             my $composition_uuid = $uuid->to_string($uuid->create());
@@ -445,7 +436,7 @@ my $handler__cdr = POE::Session->create(
                     ENCODING => 'utf8'
                 });
 
-                $big_href->[1]->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
+                $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
                 my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
