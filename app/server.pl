@@ -469,11 +469,11 @@ my $handler__cdr = POE::Session->create(
                 } => encode_utf8($composition_obj->{output})
             );
             my $response = $tx->res;
-            warn $response->code;
+            warn $response->to_string;
 
             # Finally return the XML file so we can see the results
             $frontend_response->header('Content-Type' => 'application/xml');
-            $frontend_response->content($composition_obj->{base});
+            $frontend_response->content(encode_utf8($composition_obj->{output}));
             $frontend_response->code(201);
             $kernel->yield('finalize', $frontend_response);
         },
