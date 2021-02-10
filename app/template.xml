@@ -197,7 +197,7 @@
                                     <value>SpO₂</value>
                                 </name>
                                 <value xsi:type="DV_PROPORTION">
-                                    <numerator>[% json_path('/1/assessment/news2/spO2') %]</numerator>
+                                    <numerator>[% json_path('/1/assessment/news2/spo2') %]</numerator>
                                     <denominator>100.0</denominator>
                                     <type>2</type>
                                 </value>
