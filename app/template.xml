@@ -217,17 +217,18 @@
                                     </archetype_id>
                                     <rm_version>1.0.4</rm_version>
                                 </archetype_details>
-                                <items xsi:type="ELEMENT" archetype_node_id="at0051">
-                                    <name>
-                                        <value>Flow rate</value>
-                                    </name>
-                                    <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/1/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
-                                        <units>[% json_path('/1/assessment/news2/inspired_oxygen/flow_rate/unit') %]</units>
-                                        <!-- FIXME: not represented in JSON -->
-                                        <precision>2</precision>
-                                    </value>
-                                </items>
+                                [% IF json_path('/1/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]
+                                    <items xsi:type="ELEMENT" archetype_node_id="at0051">
+                                        <name>
+                                            <value>Flow rate</value>
+                                        </name>
+                                        <value xsi:type="DV_QUANTITY">
+                                            <magnitude>[% json_path('/1/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
+                                            <units>1/min</units>
+                                            <precision>2</precision>
+                                        </value>
+                                    </items>
+                                [% END %]
                                 <items xsi:type="ELEMENT" archetype_node_id="at0054">
                                     <name>
                                         <value>Method of oxygen delivery</value>
