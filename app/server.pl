@@ -88,7 +88,7 @@ my $api_prefix          =   '/c19-alpha/0.0.1';
 my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
 my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 
-my $ehrbase             =   'http://127.0.0.1:38382';
+my $ehrbase             =   'http://127.0.0.1:8002';
 #my $ehrbase             =   'http://127.0.0.1:6767';
 
 my $create_ehr_body = {
@@ -457,8 +457,7 @@ my $handler__cdr = POE::Session->create(
 
             my $ua = Mojo::UserAgent->new;
 
-            say STDERR "TODO: Should not be hardcoded req_url!";
-            my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition';
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition";
 
             my $tx = $ua->post($req_url, {
                     'Content-Type' => 'application/xml',
@@ -636,10 +635,10 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
                 my $patient_exist = do {
                     my $nhs = $patient->{resource}->{nhsnumber}||0;
-                    my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr'
+                    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
                     .   "?subject_id=$nhs"
                     .   "&subject_namespace=nhs_number";
-                    
+
                     my $request = GET($req_url);
                     $request->header('Accept' => 'application/json');
                     $request->header('Content-Type' => 'application/json');
@@ -673,8 +672,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
 
                 $patient->{_uuid} = do {
-                    say STDERR "TODO: Should not be hardcoded req_url!";
-                    my $req_url = 'https://ehrbase.c19.devmode.xyz/ehrbase/rest/openehr/v1/ehr';
+                    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
 
                     if (!defined $patient_exist) {
                         my $request = POST($req_url);
