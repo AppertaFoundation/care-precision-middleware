@@ -76,7 +76,6 @@
         },
         "clinical_risk_category": {
           "value": "Medium",
-          "terminology": "local",
           "code": "at0059"
         },
         "air_or_oxygen": {
