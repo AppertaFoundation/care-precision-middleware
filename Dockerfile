@@ -10,11 +10,15 @@ RUN cpanm -n \
     HTTP::Request::Common \
     HTTP::Status \
     JSON::MaybeXS \
+    JSON::Pointer \
+    Mojo::UserAgent \
+    Path::Tiny \
     POE \
     POE::Component::Client::HTTP \
     POE::Component::Client::Keepalive \
     POE::Component::Server::SimpleHTTP \
     Storable Data::Search \
+    Template \
     Test::POE::Client::TCP \
     Try::Tiny \
     URI \
