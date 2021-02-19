@@ -44,6 +44,10 @@ use Mojo::UserAgent;
 use LWP::UserAgent;
 use HTTP::Request;
 
+# Arbitrary wait on startup (for ehrnbase)
+say "middleware starting, 10 seconds wait.";
+sleep 10;
+
 # Do not buffer STDOUT;
 $| = 1;
 
