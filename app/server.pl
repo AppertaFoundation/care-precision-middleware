@@ -88,8 +88,7 @@ my $api_prefix          =   '/c19-alpha/0.0.1';
 my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
 my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 
-my $ehrbase             =   'http://127.0.0.1:8002';
-#my $ehrbase             =   'http://127.0.0.1:6767';
+my $ehrbase             =   'http://127.0.0.1:38382';
 
 my $create_ehr_body = {
     "_type"             =>  "EHR_STATUS",
@@ -643,15 +642,16 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     my $res = $ua->request($request);
 
                     my $return;
-                    if ($res->code == 200) {
+                    my $return_code = $res->code;
+                    if ($return_code == 200) {
                         my $content = decode_json($res->content());
                         $return = $content->{ehr_id}->{value};
                     }
-                    elsif ($res->code == 404)   {
+                    elsif ($return_code == 404)   {
                         $return = undef;
                     }
                     else {
-                        warn "non captured response: $req_url";
+                        warn "non captured response: $req_url ($return_code)";
                     }
 
                     $return
@@ -685,6 +685,11 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
                         $patient_exist = $uuid_extract
                     }
+
+                    say "Patient " 
+                        . $patient->{resource}->{name}
+                        . ' linked with '
+                        . $patient->{resource}->{nhsnumber};
 
                     $patient_exist
                 };
