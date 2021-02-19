@@ -88,7 +88,9 @@ my $api_prefix          =   '/c19-alpha/0.0.1';
 my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
 my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 
-my $ehrbase             =   'http://127.0.0.1:38382';
+my $ehrbase_env         =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+my $ehrbase             =   $ehrbase_env;
+#'http://127.0.0.1:38382';
 
 my $create_ehr_body = {
     "_type"             =>  "EHR_STATUS",
