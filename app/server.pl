@@ -267,7 +267,7 @@ my $handler_root = POE::Session->create(
 
             $kernel->yield(lc($packet->{request}->method),$packet);
         },
-        'post'              =>  sub {
+        'get'               =>  sub {
             my ( $kernel, $heap, $session, $packet ) =
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
@@ -276,9 +276,10 @@ my $handler_root = POE::Session->create(
             my $method      =   lc($request->method);
 
             $response->code( 200 );
+            $response->header('Content-Type' => 'text/text');
             $response->content( 'Open eReact API - Unauthorized access is strictly forbidden.' );
 
-            $kernel->yield('finalize', $request, $response);
+            $kernel->yield('finalize', $response);
         },
         'finalize'          =>  sub {
             my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
