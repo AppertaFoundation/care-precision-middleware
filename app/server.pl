@@ -124,6 +124,187 @@ my $send_template = sub {
 
     return $res->code();
 };
+my $create_ehr_body = {
+    "_type"             =>  "EHR_STATUS",
+    "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
+    "name"              =>  {
+        "value" =>  "EHR Status"
+    },
+    "subject"           =>  {
+        "external_ref"      =>  {
+        "id"                    =>  {
+            "_type"                 =>  "GENERIC_ID",
+            "value"                 =>  "nhs_number",
+            "scheme"                =>  "id_scheme"
+        },
+        "namespace" =>  "nhs_number",
+        "type"      =>  "PERSON"
+        }
+    },
+    "is_modifiable" =>  JSON::MaybeXS::true,
+    "is_queryable"  =>  JSON::MaybeXS::true
+};
+my $load_patients = sub {
+    my $datetime = DateTime->now;
+    my $patient_list = decode_json(path('patients.json')->slurp);
+
+    my @commit_list;
+
+    # Simplify names, add assessments and digitize date of birth
+    MAIN: foreach my $patient (@{$patient_list->{entry}}) {
+        $patient->{_compositions} = [];
+
+        my $name_res    =   $patient->{resource}->{name};
+        my $name_use    =   [];
+
+        foreach my $oldname (@{$name_res})  {
+            my $new_name = [
+                $oldname->{prefix}->[0] || '',
+                $oldname->{given}->[0] || '',
+                $oldname->{family} || ''
+            ];
+
+            if ($oldname->{use} && $oldname->{use} eq 'official') {
+                $name_use = $new_name;
+            }
+            else {
+                push @{$patient->{resource}->{name_other}},$new_name;
+            }
+        }
+
+        # Add the full name as the first name_other
+        push @{$patient->{resource}->{name_other}},$name_use;
+        # Overwrite the old style name with a normal one
+        $patient->{resource}->{name} = join(' ',@{$name_use});
+
+        # Move the nhs-number to make it easier to search
+        $patient->{resource}->{nhsnumber}   = do {
+            my $return;
+            foreach my $id (@{$patient->{resource}->{identifier}}) {
+                if (
+                    defined $id->{'system'} 
+                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
+                )  {
+                    $return = $id->{'value'};
+                }
+            }
+            $return
+        };
+
+        # If there is no nhs number we do not want it
+        if (!$patient->{resource}->{nhsnumber}) {
+            next MAIN;
+        }
+
+        my $patient_exist = do {
+            my $nhs = $patient->{resource}->{nhsnumber}||0;
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
+            .   "?subject_id=$nhs"
+            .   "&subject_namespace=nhs_number";
+
+            my $request = GET($req_url);
+            $request->header('Accept' => 'application/json');
+            $request->header('Content-Type' => 'application/json');
+            $request->content();
+
+            my $ua = LWP::UserAgent->new();
+            my $res = $ua->request($request);
+
+            my $return;
+            my $return_code = $res->code;
+            if ($return_code == 200) {
+                my $content = decode_json($res->content());
+                $return = $content->{ehr_id}->{value};
+            }
+            elsif ($return_code == 404)   {
+                $return = undef;
+            }
+            else {
+                warn "non captured response: $req_url ($return_code)";
+            }
+
+            $return
+        };
+
+        # Adjust the base profile to add the correct name
+        my $create_ehr_body_clone = dclone($create_ehr_body);
+        $create_ehr_body_clone->{name}->{value}
+            =   $patient->{resource}->{name};
+        $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
+            =   $patient->{resource}->{nhsnumber};
+
+        # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+        $patient->{_uuid} = do {
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+            if (!defined $patient_exist) {
+                my $request = POST($req_url);
+                $request->header('Accept' => 'application/json');
+                $request->header('Content-Type' => 'application/json');
+                $request->content(encode_json($create_ehr_body_clone));
+
+                my $ua = LWP::UserAgent->new();
+                my $res = $ua->request($request);
+
+                if ($res->code != 204)  {
+                    die "Failure creating patient!";
+                }
+
+                my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+                $patient_exist = $uuid_extract
+            }
+
+            say "Patient " 
+                . $patient->{resource}->{name}
+                . ' linked with '
+                . $patient->{resource}->{nhsnumber};
+
+            $patient_exist
+        };
+
+        # Convert Date of birth to digitally calculable date
+        my ($dob_year,$dob_month,$dob_day) = 
+            split(/\-/,$patient->{resource}->{'birthDate'});
+
+        my $dob_obj = DateTime->new(
+            year       => $dob_year,
+            month      => $dob_month,
+            day        => $dob_day,
+            time_zone  => 'Europe/London',
+        );
+
+        $patient->{resource}->{'birthDateAsString'} =
+                join('-',$dob_year,$dob_month,$dob_day);
+
+        $patient->{resource}->{'birthDate'} =
+            $dob_obj->epoch();
+
+        push @commit_list,$patient;
+    }
+
+    foreach my $customer (@commit_list) {
+        my $name        =   $customer->{resource}->{name};
+        my $identifier  =   $customer->{_uuid};
+
+        # Refactor the structure of the datasource, this would be a 
+        # call to a specialist service in DITO Service_Client_UserDB
+        my $datablock = {
+            'name'              =>  $name,
+            'id'                =>  $identifier,
+            'birthDate'         =>  $customer->{resource}->{'birthDate'},
+            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+            'gender'            =>  $customer->{resource}->{'gender'},
+            'identifier'        =>  $customer->{resource}->{'identifier'},
+            'location'          =>  'Bedroom',
+            'assessment'        =>  $customer->{assessment},
+            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
+        };
+
+        $global->{patient_db}->{$identifier} = $datablock;
+        $global->{uuids}->{$identifier} = $customer;
+    }
+};
 
 while (my $query = $connect_test->()) {
     if ($query->{code} == 200) {
@@ -150,26 +331,8 @@ while (my $query = $connect_test->()) {
     }
 }
 
-my $create_ehr_body = {
-    "_type"             =>  "EHR_STATUS",
-    "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
-    "name"              =>  {
-        "value" =>  "EHR Status"
-    },
-    "subject"           =>  {
-        "external_ref"      =>  {
-        "id"                    =>  {
-            "_type"                 =>  "GENERIC_ID",
-            "value"                 =>  "nhs_number",
-            "scheme"                =>  "id_scheme"
-        },
-        "namespace" =>  "nhs_number",
-        "type"      =>  "PERSON"
-        }
-    },
-    "is_modifiable" =>  JSON::MaybeXS::true,
-    "is_queryable"  =>  JSON::MaybeXS::true
-};
+# Load the patients into memory
+$load_patients->();
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -633,170 +796,8 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $handler     =   "$api_prefix/meta/demographics/patient_list";
             $heap->{myid}   =   "handler::$handler";
 
-            my $datetime = DateTime->now;
-
             $kernel->alias_set($heap->{myid});
             $kernel->post('service::main','register_handler',$heap->{myid});
-
-            my $patient_list = decode_json(path('patients.json')->slurp);
-
-            my @commit_list;
-
-            # Simplify names, add assessments and digitize date of birth
-            MAIN: foreach my $patient (@{$patient_list->{entry}}) {
-                $patient->{_compositions} = [];
-
-                my $name_res    =   $patient->{resource}->{name};
-                my $name_use    =   [];
-
-                foreach my $oldname (@{$name_res})  {
-                    my $new_name = [
-                        $oldname->{prefix}->[0] || '',
-                        $oldname->{given}->[0] || '',
-                        $oldname->{family} || ''
-                    ];
-
-                    if ($oldname->{use} && $oldname->{use} eq 'official') {
-                        $name_use = $new_name;
-                    }
-                    else {
-                        push @{$patient->{resource}->{name_other}},$new_name;
-                    }
-                }
-
-                # Add the full name as the first name_other
-                push @{$patient->{resource}->{name_other}},$name_use;
-                # Overwrite the old style name with a normal one
-                $patient->{resource}->{name} = join(' ',@{$name_use});
-
-                # Move the nhs-number to make it easier to search
-                $patient->{resource}->{nhsnumber}   = do {
-                    my $return;
-                    foreach my $id (@{$patient->{resource}->{identifier}}) {
-                        if (
-                            defined $id->{'system'} 
-                            && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
-                        )  {
-                            $return = $id->{'value'};
-                        }
-                    }
-                    $return
-                };
-
-                # If there is no nhs number we do not want it
-                if (!$patient->{resource}->{nhsnumber}) {
-                    next MAIN;
-                }
-
-                my $patient_exist = do {
-                    my $nhs = $patient->{resource}->{nhsnumber}||0;
-                    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
-                    .   "?subject_id=$nhs"
-                    .   "&subject_namespace=nhs_number";
-
-                    my $request = GET($req_url);
-                    $request->header('Accept' => 'application/json');
-                    $request->header('Content-Type' => 'application/json');
-                    $request->content();
-
-                    my $ua = LWP::UserAgent->new();
-                    my $res = $ua->request($request);
-
-                    my $return;
-                    my $return_code = $res->code;
-                    if ($return_code == 200) {
-                        my $content = decode_json($res->content());
-                        $return = $content->{ehr_id}->{value};
-                    }
-                    elsif ($return_code == 404)   {
-                        $return = undef;
-                    }
-                    else {
-                        warn "non captured response: $req_url ($return_code)";
-                    }
-
-                    $return
-                };
-
-                # Adjust the base profile to add the correct name
-                my $create_ehr_body_clone = dclone($create_ehr_body);
-                $create_ehr_body_clone->{name}->{value}
-                    =   $patient->{resource}->{name};
-                $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
-                    =   $patient->{resource}->{nhsnumber};
-
-                # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
-
-                $patient->{_uuid} = do {
-                    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
-
-                    if (!defined $patient_exist) {
-                        my $request = POST($req_url);
-                        $request->header('Accept' => 'application/json');
-                        $request->header('Content-Type' => 'application/json');
-                        $request->content(encode_json($create_ehr_body_clone));
-
-                        my $ua = LWP::UserAgent->new();
-                        my $res = $ua->request($request);
-
-                        if ($res->code != 204)  {
-                            die "Failure creating patient!";
-                        }
-
-                        my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
-                        $patient_exist = $uuid_extract
-                    }
-
-                    say "Patient " 
-                        . $patient->{resource}->{name}
-                        . ' linked with '
-                        . $patient->{resource}->{nhsnumber};
-
-                    $patient_exist
-                };
-
-                # Convert Date of birth to digitally calculable date
-                my ($dob_year,$dob_month,$dob_day) = 
-                    split(/\-/,$patient->{resource}->{'birthDate'});
-
-                my $dob_obj = DateTime->new(
-                    year       => $dob_year,
-                    month      => $dob_month,
-                    day        => $dob_day,
-                    time_zone  => 'Europe/London',
-                );
-
-                $patient->{resource}->{'birthDateAsString'} =
-                        join('-',$dob_year,$dob_month,$dob_day);
-
-                $patient->{resource}->{'birthDate'} =
-                    $dob_obj->epoch();
-
-                push @commit_list,$patient;
-            }
-
-            foreach my $customer (@commit_list) {
-                my $name        =   $customer->{resource}->{name};
-                my $identifier  =   $customer->{_uuid};
-
-                # Refactor the structure of the datasource, this would be a 
-                # call to a specialist service in DITO Service_Client_UserDB
-                my $datablock = {
-                    'name'              =>  $name,
-                    'id'                =>  $identifier,
-                    'birthDate'         =>  $customer->{resource}->{'birthDate'},
-                    'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
-                    'gender'            =>  $customer->{resource}->{'gender'},
-                    'identifier'        =>  $customer->{resource}->{'identifier'},
-                    'location'          =>  'Bedroom',
-                    'assessment'        =>  $customer->{assessment},
-                    'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
-                };
-
-                $global->{patient_db}->{$identifier} = $datablock;
-                $global->{uuids}->{$identifier} = $customer;
-            }
-
         },
         'process_request'   =>  sub {
             my ( $kernel, $heap, $session, $sender, $packet ) =
