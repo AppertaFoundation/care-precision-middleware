@@ -911,7 +911,7 @@
             <!-- /denwis -->
         [% END %]
 
-        [% IF json_path('/assessment/response') %}
+        [% IF json_path('/assessment/response') %]
             <!-- response -->
             <items xsi:type="EVALUATION" archetype_node_id="openEHR-EHR-EVALUATION.recommendation.v1">
                 <name>
