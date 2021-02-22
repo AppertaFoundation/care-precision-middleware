@@ -317,7 +317,7 @@ while (my $query = $connect_test->()) {
         my $template_raw = Encode::encode_utf8(path('full-template.xml')->slurp);
         my $upload_code = $send_template->($template_raw);
         say STDERR "Template uploaded result: $upload_code";
-        if ($query->{code} == 204) {
+        if ($upload_code == 204) {
             say STDERR "Template successfully uploaded!";
             last;
         }
@@ -344,7 +344,7 @@ my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
             'DIR'           =>  '^/.*',
             'SESSION'       =>  'service::httpd',
             'EVENT'         =>  'process_request',
-        }, 
+        },
         {
             'DIR'           =>  '.*',
             'SESSION'       =>  'service::httpd',
@@ -686,9 +686,9 @@ my $handler__cdr = POE::Session->create(
             warn $response->to_string;
 
             # Finally return the XML file so we can see the results
-            #$frontend_response->header('Content-Type' => 'application/xml');
-            #$frontend_response->content(encode_utf8($composition_obj->{output}));
-            $frontend_response->code(204);
+            $frontend_response->header('Content-Type' => 'application/xml');
+            $frontend_response->content(encode_utf8($composition_obj->{output}));
+            $frontend_response->code(201);
             $kernel->yield('finalize', $frontend_response);
         },
 
