@@ -35,8 +35,8 @@ RUN chmod +x /dumb-init
 RUN ln -s /opt/C19/patients.json /patients.json
 RUN ln -s /opt/C19/full-template.xml /full-template.xml
 
-WORKDIR /
+WORKDIR /opt/C19
 
 EXPOSE 18080
 
-CMD [ "./dumb-init", "perl", "/opt/C19/server.pl" ]
+CMD [ "/dumb-init", "perl", "server.pl" ]
