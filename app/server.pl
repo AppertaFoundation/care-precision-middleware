@@ -124,11 +124,10 @@ my $send_template = sub {
     my $ua = LWP::UserAgent->new();
     my $res = $ua->request($request);
 
-    say STDERR "Template uploadt: ".$res->code();
-    return  code=>$res->code();
+    return $res->code();
 };
 
-while (sleep 1) {
+while (sleep 2) {
     my $query = $connect_test->();
     if ($query->{code} == 200) {
         my $template_list = decode_json($query->{content});
@@ -139,7 +138,7 @@ while (sleep 1) {
         }
         my $template_raw = Encode::encode_utf8(path('full-template.xml')->slurp);
         my $upload_code = $send_template->($template_raw);
-        if ($query->{code} == 204) {
+        if ($upload_code == 204) {
             say STDERR "Template successfully uploaded!";
             last;
         }
