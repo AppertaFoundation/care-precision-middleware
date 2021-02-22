@@ -225,7 +225,7 @@
                                             </name>
                                             <value xsi:type="DV_QUANTITY">
                                                 <magnitude>[% json_path('/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
-                                                <units>1/min</units>
+                                                <units>l/min</units>
                                                 <precision>2</precision>
                                             </value>
                                         </items>
