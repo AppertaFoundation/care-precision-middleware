@@ -44,9 +44,9 @@ use Mojo::UserAgent;
 use LWP::UserAgent;
 use HTTP::Request;
 
-# Arbitrary wait on startup (for ehrnbase)
-say "middleware starting, 10 seconds wait.";
-sleep 10;
+
+# Wait for a connection to ehrbase so we can check if templates are already 
+# availible, if not then upload it.
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -95,6 +95,60 @@ my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
 my $ehrbase_env         =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
 my $ehrbase             =   $ehrbase_env;
 #'http://127.0.0.1:38382';
+
+
+# Arbitrary wait on startup (for ehrnbase initilisation)
+my $connect_test = sub {
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $request = GET($req_url);
+
+    $request->header('Accept' => 'application/json');
+    $request->header('Prefer' => 'return=minimal');
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    say STDERR "Connect test: ".$res->code();
+    return  {code=>$res->code(),content=>$res->content()};
+};
+my $send_template = sub {
+    my $template = shift;
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $request = POST($req_url);
+
+    $request->header('Accept' => 'application/xml');
+    $request->header('Content-Type' => 'application/xml');
+    $request->header('Prefer' => 'return=minimal');
+    $request->content($template);
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    say STDERR "Template uploadt: ".$res->code();
+    return  code=>$res->code();
+};
+
+while (sleep 1) {
+    my $query = $connect_test->();
+    if ($query->{code} == 200) {
+        my $template_list = decode_json($query->{content});
+        if (scalar(@{$template_list}) > 0) {
+            say STDERR "Templates already detected";
+            say STDERR Dumper($template_list);
+            last;
+        }
+        my $template_raw = Encode::encode_utf8(path('full-template.xml')->slurp);
+        my $upload_code = $send_template->($template_raw);
+        if ($query->{code} == 204) {
+            say STDERR "Template successfully uploaded!";
+            last;
+        }
+        else {
+            say STDERR "Critical error uploading template!";
+            die;
+        }
+    }
+}
 
 my $create_ehr_body = {
     "_type"             =>  "EHR_STATUS",
