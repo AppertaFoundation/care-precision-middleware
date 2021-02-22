@@ -125,8 +125,7 @@ my $send_template = sub {
     return $res->code();
 };
 
-while (sleep 2) {
-    my $query = $connect_test->();
+while (my $query = $connect_test->()) {
     if ($query->{code} == 200) {
         my $template_list = decode_json($query->{content});
         if (scalar(@{$template_list}) > 0) {
@@ -136,7 +135,8 @@ while (sleep 2) {
         }
         my $template_raw = Encode::encode_utf8(path('full-template.xml')->slurp);
         my $upload_code = $send_template->($template_raw);
-        if ($upload_code == 204) {
+        say STDERR "Template uploaded result: $upload_code";
+        if ($query->{code} == 204) {
             say STDERR "Template successfully uploaded!";
             last;
         }
@@ -144,6 +144,9 @@ while (sleep 2) {
             say STDERR "Critical error uploading template!";
             die;
         }
+    }
+    elsif ($query->{code} == 500) {
+        sleep 5;
     }
 }
 
