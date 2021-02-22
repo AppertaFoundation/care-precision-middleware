@@ -88,14 +88,12 @@ POE::Component::Client::HTTP->spawn(
     Alias               =>  'webclient'
 );
 
-my $api_prefix          =   '/c19-alpha/0.0.1';
-my $api_hostname        =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
-my $api_hostname_cookie =   $ENV{FRONTEND_HOSTNAME} =~ s/.+\././r;
+my $api_prefix              =   '/c19-alpha/0.0.1';
+my $api_hostname            =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
+my ($api_hostname_cookie)   =   $ENV{FRONTEND_HOSTNAME} =~ m/^.*?(\..*)$/;
 
-my $ehrbase_env         =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
-my $ehrbase             =   $ehrbase_env;
-#'http://127.0.0.1:38382';
-
+my $ehrbase_env             =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+my $ehrbase                 =   $ehrbase_env;
 
 # Arbitrary wait on startup (for ehrnbase initilisation)
 my $connect_test = sub {
