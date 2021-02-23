@@ -533,7 +533,7 @@ my $handler__cdr_draft = POE::Session->create(
 
             my $payload = decode_json($packet->{request}->decoded_content());
 
-            my $assessment = $payload->[1];
+            my $assessment = $payload;
             my $patient_uuid = $assessment->{situation}->{uuid};
             my $patient = $global->{uuids}->{$patient_uuid};
 
