@@ -267,18 +267,11 @@ my $load_patients = sub {
         my ($dob_year,$dob_month,$dob_day) = 
             split(/\-/,$patient->{resource}->{'birthDate'});
 
-        my $dob_obj = DateTime->new(
-            year       => $dob_year,
-            month      => $dob_month,
-            day        => $dob_day,
-            time_zone  => 'Europe/London',
-        );
-
         $patient->{resource}->{'birthDateAsString'} =
-                join('-',$dob_year,$dob_month,$dob_day);
+            join('-',$dob_year,$dob_month,$dob_day);
 
         $patient->{resource}->{'birthDate'} =
-            $dob_obj->epoch();
+            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
 
         push @commit_list,$patient;
     }
@@ -1026,7 +1019,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # key = sepsis/news2/name/birthdate
                 # value = ASC/DESC
                 if ($search_spec->{sort}->{key} eq 'birthdate') {
-                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
                         @{$search_result} = reverse sort {
                             $a->{birthDate} cmp $b->{birthDate}
                         } @{$search_result}
@@ -1039,7 +1032,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 }
                 elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
                     my $sort_key = $1;
-                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
                         @{$search_result} = reverse sort {
                             $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
                         } @{$search_result}
