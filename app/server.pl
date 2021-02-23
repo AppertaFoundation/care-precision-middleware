@@ -156,6 +156,7 @@ my $load_patients = sub {
 
         my $name_res    =   $patient->{resource}->{name};
         my $name_use    =   [];
+        my $name_only;
 
         foreach my $oldname (@{$name_res})  {
             my $new_name = [
@@ -166,12 +167,18 @@ my $load_patients = sub {
 
             if ($oldname->{use} && $oldname->{use} eq 'official') {
                 $name_use = $new_name;
+                $name_only = join(' ',
+                    $oldname->{given}->[0] || '',
+                    $oldname->{family} || ''
+                );
             }
             else {
                 push @{$patient->{resource}->{name_other}},$new_name;
             }
         }
 
+        # Add a name without its prefix
+        $patient->{resource}->{name_search} = $name_only;
         # Add the full name as the first name_other
         push @{$patient->{resource}->{name_other}},$name_use;
         # Overwrite the old style name with a normal one
@@ -287,6 +294,7 @@ my $load_patients = sub {
             'id'                =>  $identifier,
             'birthDate'         =>  $customer->{resource}->{'birthDate'},
             'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+            'name_search'       =>  $customer->{resource}->{'name_search'},
             'gender'            =>  $customer->{resource}->{'gender'},
             'identifier'        =>  $customer->{resource}->{'identifier'},
             'location'          =>  'Bedroom',
@@ -1019,7 +1027,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # key = sepsis/news2/name/birthdate
                 # value = ASC/DESC
                 if ($search_spec->{sort}->{key} eq 'birthdate') {
-                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
                         @{$search_result} = reverse sort {
                             $a->{birthDate} cmp $b->{birthDate}
                         } @{$search_result}
@@ -1030,9 +1038,21 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         } @{$search_result}
                     }
                 }
+                elsif ($search_spec->{sort}->{key} eq 'name') {
+                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
+                        @{$search_result} = reverse sort {
+                            $a->{name_search} cmp $b->{name_search}
+                        } @{$search_result}
+                    }
+                    else {
+                        @{$search_result} = sort {
+                            $a->{name_search} cmp $b->{name_search}
+                        } @{$search_result}
+                    }
+                }
                 elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
                     my $sort_key = $1;
-                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
                         @{$search_result} = reverse sort {
                             $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
                         } @{$search_result}
