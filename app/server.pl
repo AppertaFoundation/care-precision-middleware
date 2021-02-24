@@ -1027,7 +1027,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # key = sepsis/news2/name/birthdate
                 # value = ASC/DESC
                 if ($search_spec->{sort}->{key} eq 'birthdate') {
-                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
                         @{$search_result} = reverse sort {
                             $a->{birthDate} cmp $b->{birthDate}
                         } @{$search_result}
