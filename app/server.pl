@@ -285,7 +285,7 @@ my $load_patients = sub {
 
     foreach my $customer (@commit_list) {
         my $name        =   $customer->{resource}->{name};
-        my $identifier  =   $customer->{_uuid};
+        my $identifier  =   uc($customer->{_uuid});
 
         # Refactor the structure of the datasource, this would be a 
         # call to a specialist service in DITO Service_Client_UserDB
@@ -534,15 +534,28 @@ my $handler__cdr_draft = POE::Session->create(
             my $payload = decode_json($packet->{request}->decoded_content());
 
             my $assessment = $payload;
-            my $patient_uuid = $assessment->{situation}->{uuid};
-            my $patient = $global->{uuids}->{$patient_uuid};
+            my $patient_uuid = $assessment->{header}->{uuid} ? uc($assessment->{header}->{uuid}) : undef;
 
-            make_up_score( $assessment );
-            my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+            say STDERR "-"x10 . " Assessment Dump begin " . "-"x10;
+            say STDERR Dumper($assessment);
+            say STDERR "-"x10 . " Assessment Dump _end_ " . "-"x10;
 
-            $packet->{response}->code(200);
-            $packet->{response}->header('Content-Type' => 'application/json');
-            $packet->{response}->content(encode_json($summarised));
+            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
+                my $patient = $global->{uuids}->{$patient_uuid};
+
+                make_up_score( $assessment );
+                my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+
+                $packet->{response}->code(200);
+                $packet->{response}->header('Content-Type' => 'application/json');
+                $packet->{response}->content(encode_json($summarised));
+            }
+            else {
+                print STDERR "Refusing to process draft call ";
+                if (!defined $patient_uuid) { print STDERR "patient uuid not defined!\n" }
+                elsif (!defined $global->{uuids}->{$patient_uuid}) { print STDERR "uuid: $patient_uuid is not valid!\n" }
+                else { print STDERR "an unknown exception was encountered!\n" }
+            }
 
             $kernel->yield('finalize', $packet->{response});
         },
@@ -1052,15 +1065,17 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 }
                 elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
                     my $sort_key = $1;
-                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
-                        @{$search_result} = reverse sort {
-                            $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
-                        } @{$search_result}
-                    }
-                    else {
-                        @{$search_result} = sort {
-                            ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
-                        } @{$search_result}
+                    if (1==0) {
+                        if ($search_spec->{sort}->{value} =~ m/DESC/i) {
+                            @{$search_result} = reverse sort {
+                                $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
+                            } @{$search_result}
+                        }
+                        else {
+                            @{$search_result} = sort {
+                                ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
+                            } @{$search_result}
+                        }
                     }
                 }
             }
