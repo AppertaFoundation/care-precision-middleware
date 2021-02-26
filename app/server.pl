@@ -230,7 +230,7 @@ my $load_patients = sub {
                 warn "non captured response: $req_url ($return_code)";
             }
 
-            $return
+            uc($return)
         };
 
         # Adjust the base profile to add the correct name
@@ -259,7 +259,7 @@ my $load_patients = sub {
                 }
 
                 my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
-                $patient_exist = $uuid_extract
+                $patient_exist = uc($uuid_extract)
             }
 
             say "Patient " 
