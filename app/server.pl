@@ -9,6 +9,7 @@ use warnings;
 use utf8;
 use open qw(:std :utf8);
 use experimental qw(signatures);
+use Encode;
 
 # Internal perl modules (debug)
 use Data::Dumper;
@@ -31,12 +32,21 @@ use Try::Tiny;
 use JSON::MaybeXS ':all';
 use Data::UUID;
 use DateTime;
-use File::Slurp;
 use Storable qw( dclone );
 use Data::Search;
 use DateTime;
 use XML::TreeBuilder;
 use Path::Tiny;
+use Template;
+use JSON::Pointer;
+
+use Mojo::UserAgent;
+use LWP::UserAgent;
+use HTTP::Request;
+
+
+# Wait for a connection to ehrbase so we can check if templates are already 
+# availible, if not then upload it.
 
 # Do not buffer STDOUT;
 $| = 1;
@@ -78,11 +88,254 @@ POE::Component::Client::HTTP->spawn(
     Alias               =>  'webclient'
 );
 
-my $api_prefix          =   '/c19-alpha/0.0.1';
-my $api_hostname        =   'api.c19.devmode.xyz';
-my $api_hostname_cookie =   '.c19.devmode.xyz';
+my $api_prefix              =   '/c19-alpha/0.0.1';
+my $api_hostname            =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
+my ($api_hostname_cookie)   =   $ENV{FRONTEND_HOSTNAME} =~ m/^.*?(\..*)$/;
 
-my $ehrbase             =   'http://localhost:8002';
+my $ehrbase_env             =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+my $ehrbase                 =   $ehrbase_env;
+
+# Arbitrary wait on startup (for ehrnbase initilisation)
+my $connect_test = sub {
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $request = GET($req_url);
+
+    $request->header('Accept' => 'application/json');
+    $request->header('Prefer' => 'return=minimal');
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    say STDERR "Connect test: ".$res->code();
+    return  {code=>$res->code(),content=>$res->content()};
+};
+my $send_template = sub {
+    my $template = shift;
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $request = POST($req_url);
+
+    $request->header('Accept' => 'application/xml');
+    $request->header('Content-Type' => 'application/xml');
+    $request->header('Prefer' => 'return=minimal');
+    $request->content($template);
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    return $res->code();
+};
+my $create_ehr_body = {
+    "_type"             =>  "EHR_STATUS",
+    "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
+    "name"              =>  {
+        "value" =>  "EHR Status"
+    },
+    "subject"           =>  {
+        "external_ref"      =>  {
+        "id"                    =>  {
+            "_type"                 =>  "GENERIC_ID",
+            "value"                 =>  "nhs_number",
+            "scheme"                =>  "id_scheme"
+        },
+        "namespace" =>  "nhs_number",
+        "type"      =>  "PERSON"
+        }
+    },
+    "is_modifiable" =>  JSON::MaybeXS::true,
+    "is_queryable"  =>  JSON::MaybeXS::true
+};
+my $load_patients = sub {
+    my $datetime = DateTime->now;
+    my $patient_list = decode_json(path('patients.json')->slurp);
+
+    my @commit_list;
+
+    # Simplify names, add assessments and digitize date of birth
+    MAIN: foreach my $patient (@{$patient_list->{entry}}) {
+        $patient->{_compositions} = [];
+
+        my $name_res    =   $patient->{resource}->{name};
+        my $name_use    =   [];
+        my $name_only;
+
+        foreach my $oldname (@{$name_res})  {
+            my $new_name = [
+                $oldname->{prefix}->[0] || '',
+                $oldname->{given}->[0] || '',
+                $oldname->{family} || ''
+            ];
+
+            if ($oldname->{use} && $oldname->{use} eq 'official') {
+                $name_use = $new_name;
+                $name_only = join(' ',
+                    $oldname->{given}->[0] || '',
+                    $oldname->{family} || ''
+                );
+            }
+            else {
+                push @{$patient->{resource}->{name_other}},$new_name;
+            }
+        }
+
+        # Add a name without its prefix
+        $patient->{resource}->{name_search} = $name_only;
+        # Add the full name as the first name_other
+        push @{$patient->{resource}->{name_other}},$name_use;
+        # Overwrite the old style name with a normal one
+        $patient->{resource}->{name} = join(' ',@{$name_use});
+
+        # Move the nhs-number to make it easier to search
+        $patient->{resource}->{nhsnumber}   = do {
+            my $return;
+            foreach my $id (@{$patient->{resource}->{identifier}}) {
+                if (
+                    defined $id->{'system'} 
+                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
+                )  {
+                    $return = $id->{'value'};
+                }
+            }
+            $return
+        };
+
+        # If there is no nhs number we do not want it
+        if (!$patient->{resource}->{nhsnumber}) {
+            next MAIN;
+        }
+
+        my $patient_exist = do {
+            my $nhs = $patient->{resource}->{nhsnumber}||0;
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
+            .   "?subject_id=$nhs"
+            .   "&subject_namespace=nhs_number";
+
+            my $request = GET($req_url);
+            $request->header('Accept' => 'application/json');
+            $request->header('Content-Type' => 'application/json');
+            $request->content();
+
+            my $ua = LWP::UserAgent->new();
+            my $res = $ua->request($request);
+
+            my $return;
+            my $return_code = $res->code;
+            if ($return_code == 200) {
+                my $content = decode_json($res->content());
+                $return = $content->{ehr_id}->{value};
+            }
+            elsif ($return_code == 404)   {
+                $return = undef;
+            }
+            else {
+                warn "non captured response: $req_url ($return_code)";
+            }
+
+            $return ? uc($return) : undef
+        };
+
+        # Adjust the base profile to add the correct name
+        my $create_ehr_body_clone = dclone($create_ehr_body);
+        $create_ehr_body_clone->{name}->{value}
+            =   $patient->{resource}->{name};
+        $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
+            =   $patient->{resource}->{nhsnumber};
+
+        # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+        $patient->{_uuid} = do {
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+            if (!defined $patient_exist) {
+                my $request = POST($req_url);
+                $request->header('Accept' => 'application/json');
+                $request->header('Content-Type' => 'application/json');
+                $request->content(encode_json($create_ehr_body_clone));
+
+                my $ua = LWP::UserAgent->new();
+                my $res = $ua->request($request);
+
+                if ($res->code != 204)  {
+                    die "Failure creating patient!";
+                }
+
+                my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+                $patient_exist = uc($uuid_extract)
+            }
+
+            say "Patient " 
+                . $patient_exist
+                . ' linked with: '
+                . $patient->{resource}->{nhsnumber}
+                . ' '
+                . $patient->{resource}->{name};
+
+            $patient_exist
+        };
+
+        # Convert Date of birth to digitally calculable date
+        my ($dob_year,$dob_month,$dob_day) = 
+            split(/\-/,$patient->{resource}->{'birthDate'});
+
+        $patient->{resource}->{'birthDateAsString'} =
+            join('-',$dob_year,$dob_month,$dob_day);
+
+        $patient->{resource}->{'birthDate'} =
+            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
+
+        push @commit_list,$patient;
+    }
+
+    foreach my $customer (@commit_list) {
+        my $name        =   $customer->{resource}->{name};
+        my $identifier  =   uc($customer->{_uuid});
+
+        # Refactor the structure of the datasource, this would be a 
+        # call to a specialist service in DITO Service_Client_UserDB
+        my $datablock = {
+            'name'              =>  $name,
+            'id'                =>  $identifier,
+            'birthDate'         =>  $customer->{resource}->{'birthDate'},
+            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+            'name_search'       =>  $customer->{resource}->{'name_search'},
+            'gender'            =>  $customer->{resource}->{'gender'},
+            'identifier'        =>  $customer->{resource}->{'identifier'},
+            'location'          =>  'Bedroom',
+            'assessment'        =>  $customer->{assessment},
+            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
+        };
+
+        $global->{patient_db}->{$identifier} = $datablock;
+        $global->{uuids}->{$identifier} = $customer;
+    }
+};
+
+while (my $query = $connect_test->()) {
+    if ($query->{code} == 200) {
+        my $template_list = decode_json($query->{content});
+        if (scalar(@{$template_list}) > 0) {
+            say STDERR "Templates already detected";
+            say STDERR Dumper($template_list);
+            last;
+        }
+        my $template_raw = Encode::encode_utf8(path('full-template.xml')->slurp);
+        my $upload_code = $send_template->($template_raw);
+        say STDERR "Template uploaded result: $upload_code";
+        if ($upload_code == 204) {
+            say STDERR "Template successfully uploaded!";
+            last;
+        }
+        else {
+            say STDERR "Critical error uploading template!";
+            die;
+        }
+    }
+    elsif ($query->{code} == 500) {
+        sleep 5;
+    }
+}
+
+# Load the patients into memory
+$load_patients->();
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -94,7 +347,7 @@ my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
             'DIR'           =>  '^/.*',
             'SESSION'       =>  'service::httpd',
             'EVENT'         =>  'process_request',
-        }, 
+        },
         {
             'DIR'           =>  '.*',
             'SESSION'       =>  'service::httpd',
@@ -155,7 +408,6 @@ my $service_auth = POE::Session->create(
         'authorise'         =>  sub {
             my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
 
-
         }
     },
 );
@@ -181,7 +433,7 @@ my $handler_root = POE::Session->create(
 
             $kernel->yield(lc($packet->{request}->method),$packet);
         },
-        'post'              =>  sub {
+        'get'               =>  sub {
             my ( $kernel, $heap, $session, $packet ) =
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
@@ -190,9 +442,10 @@ my $handler_root = POE::Session->create(
             my $method      =   lc($request->method);
 
             $response->code( 200 );
+            $response->header('Content-Type' => 'text/text');
             $response->content( 'Open eReact API - Unauthorized access is strictly forbidden.' );
 
-            $kernel->yield('finalize', $request, $response);
+            $kernel->yield('finalize', $response);
         },
         'finalize'          =>  sub {
             my ( $kernel, $response ) = @_[ KERNEL, ARG0 ];
@@ -282,16 +535,29 @@ my $handler__cdr_draft = POE::Session->create(
 
             my $payload = decode_json($packet->{request}->decoded_content());
 
-            my $assessment = $payload->[1];
-            my $patient_uuid = $assessment->{situation}->{uuid};
-            my $patient = $global->{uuids}->{$patient_uuid};
+            my $assessment = $payload->{assessment};
+            my $patient_uuid = $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
 
-            make_up_score( $assessment );
-            my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
+            say STDERR Dumper($assessment);
+            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
 
-            $packet->{response}->code(200);
-            $packet->{response}->header('Content-Type' => 'application/json');
-            $packet->{response}->content(encode_json($summarised));
+            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
+                my $patient = $global->{uuids}->{$patient_uuid};
+
+                make_up_score( $assessment );
+                my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+
+                $packet->{response}->code(200);
+                $packet->{response}->header('Content-Type' => 'application/json');
+                $packet->{response}->content(encode_json($summarised));
+            }
+            else {
+                print STDERR "Refusing to process draft call ";
+                if (!defined $patient_uuid) { print STDERR "patient uuid not defined!\n" }
+                elsif (!defined $global->{uuids}->{$patient_uuid}) { print STDERR "uuid: $patient_uuid is not valid!\n" }
+                else { print STDERR "an unknown exception was encountered!\n" }
+            }
 
             $kernel->yield('finalize', $packet->{response});
         },
@@ -360,17 +626,9 @@ my $handler__cdr = POE::Session->create(
             };
 
             if (
-                ($payload) 
-                && 
-                (ref($payload) eq 'ARRAY')
+                ($payload)
                 &&
-                (scalar(@{$payload}) == 2)
-#                &&
-#                (ref($payload->[0]) eq 'HASH')
-#                &&
-#                (ref($payload->[1]) eq 'HASH')
-#                &&
-#                ($payload->[0]->{templateid})
+                (ref($payload) eq 'HASH')
              )  {
                 $kernel->yield(
                     'create_new_composition',       # which of our states will receive the response
@@ -392,8 +650,7 @@ my $handler__cdr = POE::Session->create(
             # If an invalid template or JSON then return that now
             if (
                 $valid_template_test == 0
-                || !$passed_objects->[1] 
-                || ref($passed_objects->[1]) ne 'HASH'
+                || ref($passed_objects) ne 'HASH'
             ) {
                 $frontend_response->content("Invalid request");
                 $frontend_response->code(400);
@@ -402,22 +659,80 @@ my $handler__cdr = POE::Session->create(
             }
 
             # We have a valid templateid request lets proceed with creating a composition!
-            my $patient_uuid = $passed_objects->[1]->{situation}->{uuid};
+            my $patient_uuid = $passed_objects->{header}->{uuid} ? uc($passed_objects->{header}->{uuid}) : undef;
+
+            # If the patient uuid is invalid, return error
+            say STDERR "-"x10 . " Assessment(/cdr) Dump begin " . "-"x10;
+            say STDERR Dumper($passed_objects);
+            say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
+
+            if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+                my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
+                if (!defined $patient_uuid) { $error_str = "A UUID was not found to be defined in the header"; }
+                else { $error_str = "Supplied UUID($patient_uuid) was not present in local ehr db"; }
+                say STDERR "Returning: $error_str";
+                $frontend_response->header('Content-Type' => 'text/text');
+                $frontend_response->content("Supplied UUID was missing from header or not a valid ehrid UUID.");
+                $frontend_response->code(500);
+                $kernel->yield('finalize', $frontend_response);
+                return;
+            }
 
             # Create a place to put everything we need for ease and clarity
-            my $uuid = $uuid->to_string($uuid->create());
+            my $composition_uuid = $uuid->to_string($uuid->create());
             my $composition_obj =   {
-                uuid    =>  $uuid,
-                #base    =>  join('',read_file('composition.xml')),
-                input   =>  $passed_objects->[1]
+                uuid    =>  $composition_uuid,
+                input   =>  $passed_objects
             };
 
-            $global->{uuids}->{$uuid} = $composition_obj;
-            push $global->{uuids}->{$patient_uuid}->{_compositions}->@*, $composition_obj;
+            my $xml_transformation = sub {
+                my $big_href    =   shift->{input};
+                my $tt2         =   Template->new({ ENCODING => 'utf8' });
 
-            $frontend_response->header('Content-Type' => 'application/json');
-            $frontend_response->content(encode_json($composition_obj->{input}));
-            $frontend_response->code(201);
+                $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
+
+                my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
+
+                $tt2->process('template.xml', {
+                    json_path => $json_path,
+                    generate_uuid => sub { $uuid->to_string($uuid->create) } },
+                \my $xml) or die $tt2->error;
+
+                return $xml;
+            };
+
+            $composition_obj->{output}  =   $xml_transformation->($composition_obj);
+
+            # Write to /tmp for a log
+            my $comp_path = '/tmp/'.time.".log";
+            path($comp_path)->spew($composition_obj->{output});
+
+            my $ua = Mojo::UserAgent->new;
+
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
+
+            my $tx          =   $ua->post(
+                $req_url, {
+                    'Content-Type'  =>  'application/xml',
+                    Accept          =>  '*/*'
+                } => encode_utf8($composition_obj->{output})
+            );
+            my $response    =   $tx->res;
+
+            if ($response->code != 204) {
+                my $error_str = "The fullowing message was returned by ehrbase:\n".$response->to_string;
+                say STDERR "Returning: $error_str";
+                $frontend_response->header('Content-Type' => 'text/text');
+                $frontend_response->content($error_str);
+                $frontend_response->code(500);
+                $kernel->yield('finalize', $frontend_response);
+                return;
+            }
+
+            # Finally return the XML file so we can see the results
+            #$frontend_response->header('Content-Type' => 'application/xml');
+            #$frontend_response->content(encode_utf8($composition_obj->{output}));
+            $frontend_response->code(204);
             $kernel->yield('finalize', $frontend_response);
         },
 
@@ -525,100 +840,8 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $handler     =   "$api_prefix/meta/demographics/patient_list";
             $heap->{myid}   =   "handler::$handler";
 
-            my $datetime = DateTime->now;
-
             $kernel->alias_set($heap->{myid});
             $kernel->post('service::main','register_handler',$heap->{myid});
-
-            my $patient_list = decode_json(read_file('patients.json'));
-
-            my @commit_list;
-
-            # Simplify names, add assessments and digitize date of birth
-            MAIN: foreach my $patient (@{$patient_list->{entry}}) {
-                $patient->{_uuid} = $uuid->to_string($uuid->create());
-                $patient->{_compositions} = [];
-
-                my $name_res    =   $patient->{resource}->{name};
-                my $name_use    =   [];
-
-                foreach my $oldname (@{$name_res})  {
-                    my $new_name = [
-                        $oldname->{prefix}->[0] || '',
-                        $oldname->{given}->[0] || '',
-                        $oldname->{family} || ''
-                    ];
-
-                    if ($oldname->{use} && $oldname->{use} eq 'official') {
-                        $name_use = $new_name;
-                    }
-                    else {
-                        push @{$patient->{resource}->{name_other}},$new_name;
-                    }
-                }
-
-                # Add the full name as the first name_other
-                push @{$patient->{resource}->{name_other}},$name_use;
-                # Overwrite the old style name with a normal one
-                $patient->{resource}->{name} = join(' ',@{$name_use});
-
-
-                # Move the nhs-number to make it easier to search
-                $patient->{resource}->{nhsnumber}   = do {
-                    my $return;
-                    foreach my $id (@{$patient->{resource}->{identifier}}) {
-                        if (
-                            defined $id->{'system'} 
-                            && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
-                        )  {
-                            $return = $id->{'value'};
-                        }
-                    }
-                    $return
-                };
-
-                # Convert Date of birth to digitally calculable date
-                my ($dob_year,$dob_month,$dob_day) = 
-                    split(/\-/,$patient->{resource}->{'birthDate'});
-
-                my $dob_obj = DateTime->new(
-                    year       => $dob_year,
-                    month      => $dob_month,
-                    day        => $dob_day,
-                    time_zone  => 'Europe/London',
-                );
-
-                $patient->{resource}->{'birthDateAsString'} =
-                        join('-',$dob_year,$dob_month,$dob_day);
-
-                $patient->{resource}->{'birthDate'} =
-                    $dob_obj->epoch();
-
-                push @commit_list,$patient;
-            }
-
-            foreach my $customer (@commit_list) {
-                my $name        =   $customer->{resource}->{name};
-                my $identifier  =   $customer->{_uuid};
-
-                # Refactor the structure of the datasource, this would be a 
-                # call to a specialist service in DITO Service_Client_UserDB
-                my $datablock = {
-                    'name'              =>  $name,
-                    'id'                =>  $identifier,
-                    'birthDate'         =>  $customer->{resource}->{'birthDate'},
-                    'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
-                    'gender'            =>  $customer->{resource}->{'gender'},
-                    'identifier'        =>  $customer->{resource}->{'identifier'},
-                    'location'          =>  'Bedroom',
-                    'assessment'        =>  $customer->{assessment},
-                    'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
-                };
-
-                $global->{patient_db}->{$identifier} = $datablock;
-                $global->{uuids}->{$identifier} = $customer;
-            }
-
         },
         'process_request'   =>  sub {
             my ( $kernel, $heap, $session, $sender, $packet ) =
@@ -638,7 +861,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             $response->header('Content-Type' => 'application/json');
 
             # Build a list of queries
-            my $return_spec     =   { 
+            my $return_spec     =   {
                 filter_lte  => {
                     key     => $params->{filter_key},
                     value   => $params->{filter_max}
@@ -847,7 +1070,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 # key = sepsis/news2/name/birthdate
                 # value = ASC/DESC
                 if ($search_spec->{sort}->{key} eq 'birthdate') {
-                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
                         @{$search_result} = reverse sort {
                             $a->{birthDate} cmp $b->{birthDate}
                         } @{$search_result}
@@ -858,17 +1081,31 @@ my $handler__meta_demographics_patient = POE::Session->create(
                         } @{$search_result}
                     }
                 }
-                elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
-                    my $sort_key = $1;
-                    if ($search_spec->{sort}->{key} =~ m/ASC/i) {
+                elsif ($search_spec->{sort}->{key} eq 'name') {
+                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
                         @{$search_result} = reverse sort {
-                            $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
+                            $a->{name_search} cmp $b->{name_search}
                         } @{$search_result}
                     }
                     else {
                         @{$search_result} = sort {
-                            ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
+                            $a->{name_search} cmp $b->{name_search}
                         } @{$search_result}
+                    }
+                }
+                elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
+                    my $sort_key = $1;
+                    if (1==0) {
+                        if ($search_spec->{sort}->{value} =~ m/DESC/i) {
+                            @{$search_result} = reverse sort {
+                                $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
+                            } @{$search_result}
+                        }
+                        else {
+                            @{$search_result} = sort {
+                                ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
+                            } @{$search_result}
+                        }
                     }
                 }
             }

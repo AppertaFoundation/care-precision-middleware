@@ -1,0 +1,958 @@
+[%- doc_date = json_path('/header/start_time') -%]
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<composition xmlns="http://schemas.openehr.org/v1" archetype_node_id="openEHR-EHR-COMPOSITION.encounter.v1">
+    <!-- boilerplate -->
+    <name>
+        <value>Deterioriation assessment</value>
+    </name>
+    <archetype_details>
+        <archetype_id>
+            <value>EREACT - Deterioriation assessment.v0</value>
+        </archetype_id>
+        <template_id>
+            <value>EREACT - Deterioriation assessment.v0</value>
+        </template_id>
+        <rm_version>1.0.4</rm_version>
+    </archetype_details>
+    <language>
+        <terminology_id>
+            <value>ISO_639-1</value>
+        </terminology_id>
+        <code_string>en</code_string>
+    </language>
+    <territory>
+        <terminology_id>
+            <value>ISO_3166-1</value>
+        </terminology_id>
+        <code_string>GB</code_string>
+    </territory>
+    <category>
+        <value>event</value>
+        <defining_code>
+            <terminology_id>
+                <value>openehr</value>
+            </terminology_id>
+            <code_string>433</code_string>
+        </defining_code>
+    </category>
+    <composer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PARTY_IDENTIFIED">
+        <name>[% json_path('/header/composer/name') %]</name>
+    </composer>
+    <context>
+        <start_time>
+            <value>[% doc_date %]</value>
+        </start_time>
+        <setting>
+            <value>nursing home care</value>
+            <defining_code>
+                <terminology_id>
+                    <value>openehr</value>
+                </terminology_id>
+                <code_string>237</code_string>
+            </defining_code>
+        </setting>
+        <health_care_facility>
+            <external_ref>
+                <id xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GENERIC_ID">
+                    <value>9091</value>
+                    <scheme>HOSPITAL-NS</scheme>
+                </id>
+                <namespace>HOSPITAL-NS</namespace>
+                <type>PARTY</type>
+            </external_ref>
+            <name>[% json_path('/header/healthcare_facility') %]</name>
+        </health_care_facility>
+    </context>
+    <!-- /boilerplate -->
+
+    <content xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="SECTION" archetype_node_id="openEHR-EHR-SECTION.adhoc.v1">
+        <name>
+            <value>Assessment</value>
+        </name>
+        <archetype_details>
+            <archetype_id>
+                <value>openEHR-EHR-SECTION.adhoc.v1</value>
+            </archetype_id>
+            <rm_version>1.0.4</rm_version>
+        </archetype_details>
+
+        [% IF json_path('/assessment/news2') %]
+            <!-- news2 -->
+            <items xsi:type="SECTION" archetype_node_id="openEHR-EHR-SECTION.adhoc.v1">
+                <name>
+                    <value>NEWS2</value>
+                </name>
+                <archetype_details>
+                    <archetype_id>
+                        <value>openEHR-EHR-SECTION.adhoc.v1</value>
+                    </archetype_id>
+                    <rm_version>1.0.4</rm_version>
+                </archetype_details>
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.body_temperature.v2">
+                    <name>
+                        <value>Temperature</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid() %]</value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.body_temperature.v2</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0002">
+                        <name>
+                            <value>History</value>
+                        </name>
+                        <origin>
+                            <value>[% doc_date %]</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0003">
+                            <name>
+                                <value>Any event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0001">
+                                <name>
+                                    <value>Tree</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name>
+                                        <value>Temperature</value>
+                                    </name>
+                                    <value xsi:type="DV_QUANTITY">
+                                        <magnitude>[% json_path('/assessment/news2/temperature/magnitude') %]</magnitude>
+                                        <!-- FIXME: JSON has °C here -->
+                                        <units>Cel</units>
+                                        <!-- FIXME: not represented in JSON -->
+                                        <precision>1</precision>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+                <!-- FIXME not sure what part of the JSON goes in here -->
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.pulse_oximetry.v1">
+                    <name>
+                        <value>Pulse oximetry</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid( ) %] </value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.pulse_oximetry.v1</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0001">
+                        <name>
+                            <value>Event Series</value>
+                        </name>
+                        <origin>
+                            <value>2020-11-17T16:34:03.874Z</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
+                            <name>
+                                <value>Any event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                                <name>
+                                    <value>Tree</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0006">
+                                    <name>
+                                        <value>SpO₂</value>
+                                    </name>
+                                    <value xsi:type="DV_PROPORTION">
+                                        <numerator>[% json_path('/assessment/news2/spo2') %]</numerator>
+                                        <denominator>100.0</denominator>
+                                        <type>2</type>
+                                    </value>
+                                </items>
+                            </data>
+                            <state xsi:type="ITEM_TREE" archetype_node_id="at0014">
+                                <name>
+                                    <value>Tree</value>
+                                </name>
+                                <items xsi:type="CLUSTER" archetype_node_id="openEHR-EHR-CLUSTER.inspired_oxygen.v1">
+                                    <name>
+                                        <value>Inspired oxygen</value>
+                                    </name>
+                                    <archetype_details>
+                                        <archetype_id>
+                                            <value>openEHR-EHR-CLUSTER.inspired_oxygen.v1</value>
+                                        </archetype_id>
+                                        <rm_version>1.0.4</rm_version>
+                                    </archetype_details>
+                                    [% IF json_path('/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]
+                                        <items xsi:type="ELEMENT" archetype_node_id="at0051">
+                                            <name>
+                                                <value>Flow rate</value>
+                                            </name>
+                                            <value xsi:type="DV_QUANTITY">
+                                                <magnitude>[% json_path('/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
+                                                <units>l/min</units>
+                                                <precision>2</precision>
+                                            </value>
+                                        </items>
+                                    [% END %]
+                                    <items xsi:type="ELEMENT" archetype_node_id="at0054">
+                                        <name>
+                                            <value>Method of oxygen delivery</value>
+                                        </name>
+                                        <value xsi:type="DV_TEXT">
+                                            <value>[% json_path('/assessment/news2/inspired_oxygen/method_of_oxygen_delivery') %]</value>
+                                        </value>
+                                    </items>
+                                </items>
+                            </state>
+                        </events>
+                    </data>
+                </items>
+
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.pulse.v1">
+                    <name>
+                        <value>Pulse</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid() %]</value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.pulse.v1</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0002">
+                        <name>
+                            <value>history</value>
+                        </name>
+                        <origin>
+                            <value>2020-11-17T16:34:03.874Z</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0003">
+                            <name>
+                                <value>Any event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0001">
+                                <name>
+                                    <value>structure</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name xsi:type="DV_CODED_TEXT">
+                                        <value>Pulse Rate</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>at1026</code_string>
+                                        </defining_code>
+                                    </name>
+                                    <value xsi:type="DV_QUANTITY">
+                                        <magnitude>[% json_path('/assessment/news2/pulse/magnitude') %]</magnitude>
+                                        <units>/min</units>
+                                        <precision>0</precision>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.respiration.v1">
+                    <name>
+                        <value>Respirations</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid() %]</value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.respiration.v1</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0001">
+                        <name>
+                            <value>history</value>
+                        </name>
+                        <origin>
+                            <value>2020-11-17T16:34:03.874Z</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
+                            <name>
+                                <value>Any event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                                <name>
+                                    <value>List</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name>
+                                        <value>Rate</value>
+                                    </name>
+                                    <!-- FIXME: respirations is just a single value in JSON -->
+                                    <value xsi:type="DV_QUANTITY">
+                                        <magnitude>[% json_path('/assessment/news2/respirations/magnitude') %]</magnitude>
+                                        <units>/min</units>
+                                        <precision>0</precision>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.acvpu.v0">
+                    <name>
+                        <value>ACVPU scale</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid() %]</value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.acvpu.v0</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0001">
+                        <name>
+                            <value>Event Series</value>
+                        </name>
+                        <origin>
+                            <value>2020-11-17T16:34:03.875Z</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
+                            <name>
+                                <value>Any point in time event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                                <name>
+                                    <value>Tree</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name>
+                                        <value>ACVPU</value>
+                                    </name>
+                                    <value xsi:type="DV_CODED_TEXT">
+                                        <value>[% json_path('/assessment/news2/acvpu/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/news2/acvpu/code') %]</code_string>
+                                        </defining_code>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.blood_pressure.v2">
+                    <name>
+                        <value>Blood pressure</value>
+                    </name>
+                    <uid xsi:type="HIER_OBJECT_ID">
+                        <value>[% generate_uuid() %]</value>
+                    </uid>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.blood_pressure.v2</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0001">
+                        <name>
+                            <value>History</value>
+                        </name>
+                        <origin>
+                            <value>2020-11-17T16:34:03.875Z</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0006">
+                            <name>
+                                <value>Any event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                                <name>
+                                    <value>blood pressure</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name>
+                                        <value>Systolic</value>
+                                    </name>
+                                    <value xsi:type="DV_QUANTITY">
+                                        <magnitude>[% json_path('/assessment/news2/systolic/magnitude') %]</magnitude>
+                                        <units>mm[Hg]</units>
+                                        <precision>0</precision>
+                                    </value>
+                                </items>
+                                <!-- FIXME: diastolic is just a scalar value in the JSON -->
+                                <items xsi:type="ELEMENT" archetype_node_id="at0005">
+                                    <name>
+                                        <value>Diastolic</value>
+                                    </name>
+                                    <value xsi:type="DV_QUANTITY">
+                                        <magnitude>[% json_path('/assessment/news2/diastolic/magnitude') %]</magnitude>
+                                        <units>mm[Hg]</units>
+                                        <precision>0</precision>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+                <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.news2.v1">
+                    <name>
+                        <value>NEWS2 Score</value>
+                    </name>
+                    <archetype_details>
+                        <archetype_id>
+                            <value>openEHR-EHR-OBSERVATION.news2.v1</value>
+                        </archetype_id>
+                        <rm_version>1.0.4</rm_version>
+                    </archetype_details>
+                    <language>
+                        <terminology_id>
+                            <value>ISO_639-1</value>
+                        </terminology_id>
+                        <code_string>en</code_string>
+                    </language>
+                    <encoding>
+                        <terminology_id>
+                            <value>IANA_character-sets</value>
+                        </terminology_id>
+                        <code_string>UTF-8</code_string>
+                    </encoding>
+                    <subject xsi:type="PARTY_SELF"/>
+                    <data archetype_node_id="at0001">
+                        <name>
+                            <value>Event Series</value>
+                        </name>
+                        <origin>
+                            <value>[% doc_date %]</value>
+                        </origin>
+                        <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
+                            <name>
+                                <value>Any point in time event</value>
+                            </name>
+                            <time>
+                                <value>[% doc_date %]</value>
+                            </time>
+                            <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                                <name>
+                                    <value>Tree</value>
+                                </name>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0006">
+                                    <name>
+                                        <value>Respiration rate</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/respiration_rate/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/respiration_rate/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/respiration_rate/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0029">
+                                    <name>
+                                        <value>SpO₂ Scale 1</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/spo_scale_1/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/spo_scale_1/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/spo_scale_1/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0034">
+                                    <name>
+                                        <value>Air or oxygen?</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/air_or_oxygen/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0004">
+                                    <name>
+                                        <value>Systolic blood pressure</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0005">
+                                    <name>
+                                        <value>Pulse</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/pulse/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/pulse/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/pulse/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0008">
+                                    <name>
+                                        <value>Consciousness</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/consciousness/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/consciousness/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/consciousness/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0007">
+                                    <name>
+                                        <value>Temperature</value>
+                                    </name>
+                                    <value xsi:type="DV_ORDINAL">
+                                        <value>[% json_path('/assessment/news2/news2_score/temperature/ordinal') %]</value>
+                                        <symbol>
+                                            <value>[% json_path('/assessment/news2/news2_score/temperature/value') %]</value>
+                                            <defining_code>
+                                                <terminology_id>
+                                                    <value>local</value>
+                                                </terminology_id>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/temperature/code') %]</code_string>
+                                            </defining_code>
+                                        </symbol>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0028">
+                                    <name>
+                                        <value>Total score</value>
+                                    </name>
+                                    <value xsi:type="DV_COUNT">
+                                        <magnitude>[% json_path('/assessment/news2/news2_score/total_score') %]</magnitude>
+                                    </value>
+                                </items>
+                                <items xsi:type="ELEMENT" archetype_node_id="at0056">
+                                    <name>
+                                        <value>Clinical risk category</value>
+                                    </name>
+                                    <value xsi:type="DV_CODED_TEXT">
+                                        <value>[% json_path('/assessment/news2/news2_score/clinical_risk_category/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/news2/news2_score/clinical_risk_category/code') %]</code_string>
+                                        </defining_code>
+                                    </value>
+                                </items>
+                            </data>
+                        </events>
+                    </data>
+                </items>
+            </items>
+            <!-- /news2 -->
+        [% END %]
+
+        [% IF json_path('/assessment/denwis') %]
+            <!-- denwis -->
+            <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.denwis.v0">
+                <name>
+                    <value>DENWIS</value>
+                </name>
+                <uid xsi:type="HIER_OBJECT_ID">
+                    <value>[% generate_guid() %]</value>
+                </uid>
+                <archetype_details>
+                    <archetype_id>
+                        <value>openEHR-EHR-OBSERVATION.denwis.v0</value>
+                    </archetype_id>
+                    <rm_version>1.0.4</rm_version>
+                </archetype_details>
+                <language>
+                    <terminology_id>
+                        <value>ISO_639-1</value>
+                    </terminology_id>
+                    <code_string>en</code_string>
+                </language>
+                <encoding>
+                    <terminology_id>
+                        <value>IANA_character-sets</value>
+                    </terminology_id>
+                    <code_string>UTF-8</code_string>
+                </encoding>
+                <subject xsi:type="PARTY_SELF"/>
+                <data archetype_node_id="at0001">
+                    <name>
+                        <value>Event Series</value>
+                    </name>
+                    <origin>
+                        <value>[% doc_date %]</value>
+                    </origin>
+                    <events xsi:type="POINT_EVENT" archetype_node_id="at0002">
+                        <name>
+                            <value>Point in time</value>
+                        </name>
+                        <time>
+                            <value>[% doc_date %]</value>
+                        </time>
+                        <data xsi:type="ITEM_TREE" archetype_node_id="at0003">
+                            <name>
+                                <value>Tree</value>
+                            </name>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0028">
+                                <name>
+                                    <value>Q1 Breathing</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q1_breathing/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q1_breathing/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q1_breathing/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0033">
+                                <name>
+                                    <value>Q2 Circulation</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q2_circulation/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q2_circulation/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q2_circulation/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0038">
+                                <name>
+                                    <value>Q3 Temperature</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q3_temperature/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q3_temperature/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q3_temperature/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0043">
+                                <name>
+                                    <value>Q4 Mentation</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q4_mentation/oridnal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q4_mentation/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q4_mentation/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0047">
+                                <name>
+                                    <value>Q5 Agitation</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q5_agitation/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q5_agitation/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q5_agitation/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0050">
+                                <name>
+                                    <value>Q6 Pain</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q6_pain/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q6_pain/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q6_pain/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0053">
+                                <name>
+                                    <value>Q7 Trajectory</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q7_trajectory/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q7_trajectory/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q7_trajectory/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0056">
+                                <name>
+                                    <value>Q8 Patient subjective</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q8_patient_subjective/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q8_patient_subjective/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q8_patient_subjective/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0059">
+                                <name>
+                                    <value>Q9 Nurse subjective</value>
+                                </name>
+                                <value xsi:type="DV_ORDINAL">
+                                    <value>[% json_path('/assessment/denwis/q9_nurse_subjective/ordinal') %]</value>
+                                    <symbol>
+                                        <value>[% json_path('/assessment/denwis/q9_nurse_subjective/value') %]</value>
+                                        <defining_code>
+                                            <terminology_id>
+                                                <value>local</value>
+                                            </terminology_id>
+                                            <code_string>[% json_path('/assessment/denwis/q9_nurse_subjective/code') %]</code_string>
+                                        </defining_code>
+                                    </symbol>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0027">
+                                <name>
+                                    <value>Q 10 Other comment</value>
+                                </name>
+                                <value xsi:type="DV_TEXT">
+                                    <value>[% json_path('/assessment/denwis/q_10_other_comment') %]</value>
+                                </value>
+                            </items>
+                            <items xsi:type="ELEMENT" archetype_node_id="at0008">
+                                <name>
+                                    <value>Total score</value>
+                                </name>
+                                <value xsi:type="DV_COUNT">
+                                    <magnitude>[% json_path('/assessment/denwis/total_score') %]</magnitude>
+                                </value>
+                            </items>
+                        </data>
+                    </events>
+                </data>
+            </items>
+            <!-- /denwis -->
+        [% END %]
+
+        [% IF json_path('/assessment/response') %]
+            <!-- response -->
+            <items xsi:type="EVALUATION" archetype_node_id="openEHR-EHR-EVALUATION.recommendation.v1">
+                <name>
+                    <value>Recommendation</value>
+                </name>
+                <uid xsi:type="HIER_OBJECT_ID">
+                    <value>[% generate_uuid() %]</value>
+                </uid>
+                <archetype_details>
+                    <archetype_id>
+                        <value>openEHR-EHR-EVALUATION.recommendation.v1</value>
+                    </archetype_id>
+                    <rm_version>1.0.4</rm_version>
+                </archetype_details>
+                <language>
+                    <terminology_id>
+                        <value>ISO_639-1</value>
+                    </terminology_id>
+                    <code_string>en</code_string>
+                </language>
+                <encoding>
+                    <terminology_id>
+                        <value>IANA_character-sets</value>
+                    </terminology_id>
+                    <code_string>UTF-8</code_string>
+                </encoding>
+                <subject xsi:type="PARTY_SELF"/>
+                <data xsi:type="ITEM_TREE" archetype_node_id="at0001">
+                    <name>
+                        <value>Tree</value>
+                    </name>
+                    <items xsi:type="ELEMENT" archetype_node_id="at0002">
+                        <name>
+                            <value>Recommendation</value>
+                        </name>
+                        <value xsi:type="DV_TEXT">
+                            <value>Enhanced monitoring</value>
+                        </value>
+                    </items>
+                </data>
+            </items>
+            <!-- /response -->
+        [% END %]
+    </content>
+</composition>

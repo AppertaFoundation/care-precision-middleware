@@ -1,0 +1,68 @@
+{
+  "header": {
+    "start_time": "2021-02-10T13:34:58.446Z",
+    "uuid": "3B917D6E-30B6-11EB-9B84-84525E058BE1",
+    "healthcare_facility": "Glen Carse Care Home",
+    "composer": {
+      "name": "RN Joyce Brown",
+      "id": {
+        "type": "NMC",
+        "id": "12342341",
+        "namespace": "uk.org.nmc"
+      }
+    }
+  },
+  "situation": {
+    "soft_signs": [
+      "Had a fall"
+    ]
+  },
+  "background": {
+    "frailty": [
+      {
+        "code": "at0008",
+        "value": "Vurnerable"
+      }
+    ],
+    "height": {
+      "magnitude": 165,
+      "unit": "cm"
+    },
+    "weight": {
+      "magnitude": 50,
+      "unit": "kg"
+    },
+    "allergies": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus mollis, augue et mollis fermentum, lectus risus commodo lorem, id congue libero augue eget sapien. In semper sollicitudin sempe",
+    "medication": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus mollis, augue et mollis fermentum, lectus risus commodo lorem, id congue libero augue eget sapien. In semper sollicitudin sempe"
+  },
+  "assessment": {
+    "news2": {
+      "respirations": {
+        "magnitude": 55
+      },
+      "spo2": 55,
+      "systolic": {
+        "magnitude": 55
+      },
+      "diastolic": {
+        "magnitude": 44
+      },
+      "pulse": {
+        "magnitude": 34
+      },
+      "acvpu": {
+        "code": "at0007",
+        "value": "Pain"
+      },
+      "temperature": {
+        "magnitude": 34
+      },
+      "inspired_oxygen": {
+        "method_of_oxygen_delivery": "Mask",
+        "flow_rate": {
+          "magnitude": 4
+        }
+      }
+    }
+  }
+}
