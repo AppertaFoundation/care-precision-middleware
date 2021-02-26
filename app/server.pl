@@ -263,9 +263,11 @@ my $load_patients = sub {
             }
 
             say "Patient " 
-                . $patient->{resource}->{name}
-                . ' linked with '
-                . $patient->{resource}->{nhsnumber};
+                . $patient_exist
+                . ' linked with: '
+                . $patient->{resource}->{nhsnumber}
+                . ' '
+                . $patient->{resource}->{name};
 
             $patient_exist
         };
@@ -536,9 +538,9 @@ my $handler__cdr_draft = POE::Session->create(
             my $assessment = $payload;
             my $patient_uuid = $assessment->{header}->{uuid} ? uc($assessment->{header}->{uuid}) : undef;
 
-            say STDERR "-"x10 . " Assessment Dump begin " . "-"x10;
+            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
             say STDERR Dumper($assessment);
-            say STDERR "-"x10 . " Assessment Dump _end_ " . "-"x10;
+            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
 
             if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
                 my $patient = $global->{uuids}->{$patient_uuid};
