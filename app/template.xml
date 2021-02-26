@@ -7,10 +7,10 @@
     </name>
     <archetype_details>
         <archetype_id>
-            <value>openEHR-EHR-COMPOSITION.encounter.v1</value>
+            <value>EREACT - Deterioriation assessment.v0</value>
         </archetype_id>
         <template_id>
-            <value>open_eREACT-Care</value>
+            <value>EREACT - Deterioriation assessment.v0</value>
         </template_id>
         <rm_version>1.0.4</rm_version>
     </archetype_details>
