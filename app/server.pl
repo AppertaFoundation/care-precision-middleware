@@ -546,7 +546,7 @@ my $handler__cdr_draft = POE::Session->create(
                 my $patient = $global->{uuids}->{$patient_uuid};
 
                 make_up_score( $assessment );
-                my $summarised = summarise_composed_assessment( compose_assessments ( $patient, $assessment ) );
+                my $summarised = summarise_composed_assessment( compose_assessments ( $patient_uuid, $assessment ) );
 
                 $packet->{response}->code(200);
                 $packet->{response}->header('Content-Type' => 'application/json');
@@ -913,7 +913,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             );
 
             for (@$result) {
-                $_->{assessment} = summarise_composed_assessment( compose_assessments( $global->{uuids}->{ $_->{id} } ) )
+                $_->{assessment} = summarise_composed_assessment( compose_assessments( $_->{id} ) )
             }
 
             $response->content(encode_json($result));
@@ -1504,14 +1504,16 @@ sub new_session($sessionid) {
     return $session;
 }
 
-sub compose_assessments {
-    my $patient = shift;
-    # Put a draft assesment in here. You can do multiple I suppose.
-    my @extra = @_;
+sub get_compositions($patient_uuid) {
+    return $global->{uuids}->{ $patient_uuid }->{_compositions}->@*;
+}
+
+sub compose_assessments($patient_uuid, @extra) {
+    # Put a draft assesment in @extra. You can do multiple I suppose.
 
     my $composed = {};
 
-    for my $composition (@extra, map { $_->{input} } $patient->{_compositions}->@*) {
+    for my $composition (@extra, map { $_->{input} } get_compositions($patient_uuid)) {
         if ($composition->{denwis}) {
             if (not $composed->{denwis}) {
                 # Shallow copy for when we add trend to it later
