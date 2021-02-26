@@ -595,14 +595,14 @@
                                         <value>Systolic blood pressure</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/ordinal') %]</value>
+                                        <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/value') %]</value>
+                                            <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/air_or_oxygen/code') %]</code_string>
+                                                <code_string>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
