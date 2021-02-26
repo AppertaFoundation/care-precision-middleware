@@ -535,8 +535,8 @@ my $handler__cdr_draft = POE::Session->create(
 
             my $payload = decode_json($packet->{request}->decoded_content());
 
-            my $assessment = $payload;
-            my $patient_uuid = $assessment->{header}->{uuid} ? uc($assessment->{header}->{uuid}) : undef;
+            my $assessment = $payload->{assessment};
+            my $patient_uuid = $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
 
             say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
             say STDERR Dumper($assessment);
