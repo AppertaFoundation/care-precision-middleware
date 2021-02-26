@@ -660,11 +660,15 @@ my $handler__cdr = POE::Session->create(
             my $patient_uuid = $passed_objects->{header}->{uuid} ? uc($passed_objects->{header}->{uuid}) : undef;
 
             # If the patient uuid is invalid, return error
-            say STDERR "-"x10 . " Assessment Dump begin " . "-"x10;
+            say STDERR "-"x10 . " Assessment(/cdr) Dump begin " . "-"x10;
             say STDERR Dumper($passed_objects);
-            say STDERR "-"x10 . " Assessment Dump _end_ " . "-"x10;
+            say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
 
             if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+                my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
+                if (!defined $patient_uuid) { $error_str = "A UUID was not found to be defined in the header"; }
+                else { $error_str = "Supplied UUID($patient_uuid) was not present in local ehr db"; }
+                say STDERR "Returning: $error_str";
                 $frontend_response->header('Content-Type' => 'text/text');
                 $frontend_response->content("Supplied UUID was missing from header or not a valid ehrid UUID.");
                 $frontend_response->code(500);
@@ -709,8 +713,10 @@ my $handler__cdr = POE::Session->create(
             my $response = $tx->res;
 
             if ($response->code != 204) {
+                my $error_str = "The fullowing message was returned by ehrbase:\n".$response->to_string;
+                say STDERR "Returning: $error_str";
                 $frontend_response->header('Content-Type' => 'text/text');
-                $frontend_response->content("The fullowing message was returned by ehrbase:\n".$response->to_string);
+                $frontend_response->content($error_str);
                 $frontend_response->code(500);
                 $kernel->yield('finalize', $frontend_response);
                 return;
