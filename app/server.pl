@@ -230,7 +230,7 @@ my $load_patients = sub {
                 warn "non captured response: $req_url ($return_code)";
             }
 
-            uc($return)
+            $return ? uc($return) : undef
         };
 
         # Adjust the base profile to add the correct name
