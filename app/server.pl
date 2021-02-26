@@ -703,16 +703,21 @@ my $handler__cdr = POE::Session->create(
 
             $composition_obj->{output}  =   $xml_transformation->($composition_obj);
 
+            # Write to /tmp for a log
+            my $comp_path = '/tmp/'.time.".log";
+            path($comp_path)->spew($composition_obj->{output});
+
             my $ua = Mojo::UserAgent->new;
 
             my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition";
 
-            my $tx = $ua->post($req_url, {
-                    'Content-Type' => 'application/xml',
-                    Accept => '*/*'
+            my $tx          =   $ua->post(
+                $req_url, {
+                    'Content-Type'  =>  'application/xml',
+                    Accept          =>  '*/*'
                 } => encode_utf8($composition_obj->{output})
             );
-            my $response = $tx->res;
+            my $response    =   $tx->res;
 
             if ($response->code != 204) {
                 my $error_str = "The fullowing message was returned by ehrbase:\n".$response->to_string;
