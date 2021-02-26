@@ -730,9 +730,9 @@ my $handler__cdr = POE::Session->create(
             }
 
             # Finally return the XML file so we can see the results
-            $frontend_response->header('Content-Type' => 'application/xml');
-            $frontend_response->content(encode_utf8($composition_obj->{output}));
-            $frontend_response->code(201);
+            #$frontend_response->header('Content-Type' => 'application/xml');
+            #$frontend_response->content(encode_utf8($composition_obj->{output}));
+            $frontend_response->code(204);
             $kernel->yield('finalize', $frontend_response);
         },
 
