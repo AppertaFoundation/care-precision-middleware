@@ -1505,6 +1505,71 @@ sub new_session($sessionid) {
 }
 
 sub get_compositions($patient_uuid) {
+    if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+        $patient_uuid = $patient_uuid ? $patient_uuid : '';
+        say STDERR "Invalid UUID passed to get_compositions UUID:($patient_uuid)";
+        die;
+    }
+
+    my $composition_objs = do {
+        my $request = POST($ehrbase.'/ehrbase/rest/openehr/v1/query/aql');
+        $request->header('Accept'       => 'application/json');
+        $request->header('Content-Type' => 'application/json');
+
+        my $query = {
+            'q'    =>  "SELECT c/uid/value FROM EHR e [ehr_id/value = '$patient_uuid'] CONTAINS COMPOSITION c"
+        };
+
+        $request->content(encode_json($query));
+
+        my $ua = LWP::UserAgent->new();
+        my $res = $ua->request($request);
+
+        if ($res->code != 200)  {
+            print STDERR "Invalid AQL query";
+            die;
+        }
+
+        my $raw_obj = decode_json($res->content());
+        $raw_obj->{rows}
+    };
+
+    my $retrieve_composition = sub {
+        my ($ehrid,$compositionid) = @_;
+
+        if (!$ehrid || !$compositionid) { 
+            say STDERR "ehrid or compositionid was missing, line: __LINE__";
+            die;
+        }
+
+        my $request = GET($ehrbase."/ehrbase/rest/openehr/v1/ehr/$ehrid/composition/$compositionid");
+        $request->header('Accept'       => 'application/xml');
+        $request->header('Content-Type' => 'application/json');
+
+        my $query = {
+            'q'    =>  "SELECT c/uid/value FROM EHR e [ehr_id/value = '$patient_uuid'] CONTAINS COMPOSITION c"
+        };
+
+        $request->content(encode_json($query));
+
+        my $ua = LWP::UserAgent->new();
+        my $res = $ua->request($request);
+
+        if ($res->code != 200)  {
+            print STDERR "Invalid AQL query";
+            die;
+        }
+        $res->content();
+    };
+
+    my $result = [];
+    foreach my $composition (@{$composition_objs}) {
+        push @{$result},$retrieve_composition->($patient_uuid,$composition->[0]);
+    }
+
+    # ENOURMOUS SCREEN FILLING DUMP
+    warn Dumper($result);
+
     return $global->{uuids}->{ $patient_uuid }->{_compositions}->@*;
 }
 
