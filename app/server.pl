@@ -709,7 +709,7 @@ my $handler__cdr = POE::Session->create(
 
             my $ua = Mojo::UserAgent->new;
 
-            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/d4ac93a7-4380-46a6-9cb3-49915381a94a/composition";
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
 
             my $tx          =   $ua->post(
                 $req_url, {
