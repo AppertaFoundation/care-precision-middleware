@@ -6,7 +6,7 @@
     </name>
     <archetype_details>
         <archetype_id>
-            <value>openEHR-EHR-COMPOSITION.encounter.v1</value>
+            <value>open_eREACT-Care</value>
         </archetype_id>
         <template_id>
             <value>[% json_path('/0/templateid') %]</value>
