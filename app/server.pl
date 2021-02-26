@@ -657,21 +657,31 @@ my $handler__cdr = POE::Session->create(
             }
 
             # We have a valid templateid request lets proceed with creating a composition!
-            my $patient_uuid = $passed_objects->{header}->{uuid};
+            my $patient_uuid = $passed_objects->{header}->{uuid} ? uc($passed_objects->{header}->{uuid}) : undef;
+
+            # If the patient uuid is invalid, return error
+            say STDERR "-"x10 . " Assessment Dump begin " . "-"x10;
+            say STDERR Dumper($passed_objects);
+            say STDERR "-"x10 . " Assessment Dump _end_ " . "-"x10;
+
+            if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+                $frontend_response->header('Content-Type' => 'text/text');
+                $frontend_response->content("Supplied UUID was missing from header or not a valid ehrid UUID.");
+                $frontend_response->code(500);
+                $kernel->yield('finalize', $frontend_response);
+                return;
+            }
 
             # Create a place to put everything we need for ease and clarity
             my $composition_uuid = $uuid->to_string($uuid->create());
             my $composition_obj =   {
                 uuid    =>  $composition_uuid,
-                #base    =>  join('',read_file('composition.xml')),
                 input   =>  $passed_objects
             };
 
             my $xml_transformation = sub {
-                my $big_href = shift->{input};
-                my $tt2 = Template->new({
-                    ENCODING => 'utf8'
-                });
+                my $big_href    =   shift->{input};
+                my $tt2         =   Template->new({ ENCODING => 'utf8' });
 
                 $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
@@ -697,7 +707,14 @@ my $handler__cdr = POE::Session->create(
                 } => encode_utf8($composition_obj->{output})
             );
             my $response = $tx->res;
-            warn $response->to_string;
+
+            if ($response->code != 204) {
+                $frontend_response->header('Content-Type' => 'text/text');
+                $frontend_response->content("The fullowing message was returned by ehrbase:\n".$response->to_string);
+                $frontend_response->code(500);
+                $kernel->yield('finalize', $frontend_response);
+                return;
+            }
 
             # Finally return the XML file so we can see the results
             $frontend_response->header('Content-Type' => 'application/xml');
