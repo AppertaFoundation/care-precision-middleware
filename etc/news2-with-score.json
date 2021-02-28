@@ -71,7 +71,6 @@
             },
             "clinical_risk_category": {
                 "code": "at0059",
-                "terminology": "local",
                 "value": "Medium"
             },
             "consciousness": {

@@ -12,6 +12,8 @@ RUN cpanm -n \
     JSON::MaybeXS \
     JSON::Pointer \
     Mojo::UserAgent \
+    Mojo::DOM \
+    Mojo::DOM::Role::PrettyPrinter \
     Path::Tiny \
     POE \
     POE::Component::Client::HTTP \
@@ -22,8 +24,7 @@ RUN cpanm -n \
     Test::POE::Client::TCP \
     Try::Tiny \
     URI \
-    URI::QueryParam \
-    XML::TreeBuilder
+    URI::QueryParam
 
 COPY app /opt/C19
 
