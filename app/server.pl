@@ -687,8 +687,6 @@ my $handler__cdr = POE::Session->create(
                 input   =>  $passed_objects
             };
 
-            push $global->{uuids}->{$patient_uuid}->{_compositions}->@*, $composition_obj;
-
             my $xml_transformation = sub {
                 my $big_href    =   shift->{input};
                 my $tt2         =   Template->new({ ENCODING => 'utf8' });
