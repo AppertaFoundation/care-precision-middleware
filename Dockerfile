@@ -28,7 +28,7 @@ RUN cpanm -n \
 
 COPY app /opt/C19
 
-COPY build-asset/dumb-init /dumb-init
+COPY build-asset/dumb-init_1.2.4_x86_64 /dumb-init
 
 RUN chmod +x /dumb-init
 
