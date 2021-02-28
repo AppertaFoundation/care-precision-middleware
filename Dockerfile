@@ -24,7 +24,8 @@ RUN cpanm -n \
     Test::POE::Client::TCP \
     Try::Tiny \
     URI \
-    URI::QueryParam
+    URI::QueryParam \
+    LWP::UserAgent.pm
 
 COPY app /opt/C19
 
