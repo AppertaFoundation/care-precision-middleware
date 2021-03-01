@@ -33,9 +33,7 @@ use JSON::MaybeXS ':all';
 use Data::UUID;
 use DateTime;
 use Storable qw( dclone );
-use Data::Search;
 use DateTime;
-#use XML::TreeBuilder;
 use Path::Tiny;
 use Template;
 use JSON::Pointer;
@@ -452,7 +450,7 @@ my $handler_root = POE::Session->create(
 
             $response->code( 200 );
             $response->header('Content-Type' => 'text/text');
-            $response->content( 'Open eReact API - Unauthorized access is strictly forbidden.' );
+            $response->content('Open eReact API - Unauthorized access is strictly forbidden.');
 
             $kernel->yield('finalize', $response);
         },
@@ -1588,11 +1586,14 @@ sub get_compositions($patient_uuid) {
             if (ref $spec eq 'HASH' and $spec->{name}) {
                 $dom = $dom->$get_node_with_name($spec->{name});
             }
+            elsif (!$dom) {
+                return "";
+            }
             else {
                 my $node = $dom->at($spec);
 
                 if (! $node) {
-                    warn "Nothing found for $spec in: \n\n $dom";
+                    say STDERR "Nothing found for $spec in: \n\n $dom";
                     return;
                 }
 
