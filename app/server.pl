@@ -100,10 +100,11 @@ my $ehrbase                 =   $ehrbase_env;
 # Arbitrary wait on startup (for ehrnbase initilisation)
 my $connect_test = sub {
     my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
-    my $request = GET($req_url);
-
-    $request->header('Accept' => 'application/json');
-    $request->header('Prefer' => 'return=minimal');
+    my $request = GET(
+        $req_url,
+        'Accept' => 'application/json',
+        'Prefer' => 'return=minimal'
+    );
 
     my $ua = LWP::UserAgent->new();
     my $res = $ua->request($request);
@@ -114,12 +115,14 @@ my $connect_test = sub {
 my $send_template = sub {
     my $template = shift;
     my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
-    my $request = POST($req_url);
 
-    $request->header('Accept' => 'application/xml');
-    $request->header('Content-Type' => 'application/xml');
-    $request->header('Prefer' => 'return=minimal');
-    $request->content($template);
+    my $request = POST(
+        $req_url,
+        'Accept'        => 'application/xml',
+        'Content-Type'  => 'application/xml',
+        'Prefer'        => 'return=minimal',
+        Content         =>  $template
+    );
 
     my $ua = LWP::UserAgent->new();
     my $res = $ua->request($request);
@@ -211,10 +214,12 @@ my $load_patients = sub {
             .   "?subject_id=$nhs"
             .   "&subject_namespace=nhs_number";
 
-            my $request = GET($req_url);
-            $request->header('Accept' => 'application/json');
-            $request->header('Content-Type' => 'application/json');
-            $request->content();
+            my $request = GET(
+                $req_url,
+                'Accept'        =>  'application/json',
+                'Content-Type'  =>  'application/json',
+                Content         =>  ''
+            );
 
             my $ua = LWP::UserAgent->new();
             my $res = $ua->request($request);
@@ -248,10 +253,12 @@ my $load_patients = sub {
             my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
 
             if (!defined $patient_exist) {
-                my $request = POST($req_url);
-                $request->header('Accept' => 'application/json');
-                $request->header('Content-Type' => 'application/json');
-                $request->content(encode_json($create_ehr_body_clone));
+                my $request = POST(
+                    $req_url,
+                    'Accept'        =>  'application/json',
+                    'Content-Type'  =>  'application/json',
+                    Content         =>  encode_json($create_ehr_body_clone)
+                );
 
                 my $ua = LWP::UserAgent->new();
                 my $res = $ua->request($request);
@@ -1514,15 +1521,16 @@ sub get_compositions($patient_uuid) {
     }
 
     my $composition_objs = do {
-        my $request = POST($ehrbase.'/ehrbase/rest/openehr/v1/query/aql');
-        $request->header('Accept'       => 'application/json');
-        $request->header('Content-Type' => 'application/json');
-
         my $query = {
             'q'    =>  "SELECT c/uid/value FROM EHR e [ehr_id/value = '$patient_uuid'] CONTAINS COMPOSITION c"
         };
 
-        $request->content(encode_json($query));
+        my $request = POST(
+            "$ehrbase/ehrbase/rest/openehr/v1/query/aql",
+            'Accept'        =>  'application/json',
+            'Content-Type'  =>  'application/json',
+            Content         =>  encode_json($query)
+        );
 
         my $ua = LWP::UserAgent->new();
         my $res = $ua->request($request);
@@ -1544,15 +1552,16 @@ sub get_compositions($patient_uuid) {
             die;
         }
 
-        my $request = GET($ehrbase."/ehrbase/rest/openehr/v1/ehr/$ehrid/composition/$compositionid");
-        $request->header('Accept'       => 'application/xml');
-        $request->header('Content-Type' => 'application/json');
-
         my $query = {
             'q'    =>  "SELECT c/uid/value FROM EHR e [ehr_id/value = '$patient_uuid'] CONTAINS COMPOSITION c"
         };
 
-        $request->content(encode_json($query));
+        my $request = GET(
+            "$ehrbase/ehrbase/rest/openehr/v1/ehr/$ehrid/composition/$compositionid",
+            'Accept'       => 'application/xml',
+            'Content-Type' => 'application/json',
+            Content        =>   encode_json($query)
+        );
 
         my $ua = LWP::UserAgent->new();
         my $res = $ua->request($request);
