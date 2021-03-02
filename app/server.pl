@@ -158,6 +158,7 @@ my $load_patients = sub {
         $patient->{_compositions} = [];
 
         my $name_res    =   $patient->{resource}->{name};
+        my $name_uuid   =   $patient->{resource}->{uuid};
         my $name_use    =   [];
         my $name_only;
 
@@ -248,10 +249,10 @@ my $load_patients = sub {
         # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
 
         $patient->{_uuid} = do {
-            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$name_uuid";
 
             if (!defined $patient_exist) {
-                my $request = POST(
+                my $request = PUT(
                     $req_url,
                     'Accept'        =>  'application/json',
                     'Content-Type'  =>  'application/json',
