@@ -552,9 +552,16 @@ my $handler__cdr_draft = POE::Session->create(
 
             if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
                 my $patient = $global->{uuids}->{$patient_uuid};
+                my $patient = $global->{uuids}->{$patient_uuid};
+
+                $patient->{situation}  = $payload->{situation};
+                $patient->{background} = $payload->{background};
 
                 $assessment = make_up_score( $assessment );
                 my $summarised = summarise_composed_assessment( compose_assessments ( $patient_uuid, $assessment ) );
+
+                $summarised->{situation}  = $patient->{situation};
+                $summarised->{background} = $patient->{background};
 
                 $packet->{response}->code(200);
                 $packet->{response}->header('Content-Type' => 'application/json');
