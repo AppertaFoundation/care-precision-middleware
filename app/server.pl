@@ -1764,7 +1764,7 @@ sub summarise_composed_assessment {
     }
 
     if ($composed->{news2}) {
-        $summary->{news2}->{value}   =   do {
+        $summary->{news2}   =   do {
             # Just pick one of these at random
             my @clinical_risk = (
                 {
@@ -1811,7 +1811,7 @@ sub summarise_composed_assessment {
             );
 
             {
-                value        => $composed->{news2}->{score},
+                score        => $composed->{news2}->{score},
                 trend        => $composed->{news2}->{trend},
                 clinicalRisk => $clinical_risk[rand @clinical_risk],
             };
