@@ -44,6 +44,7 @@ use Mojo::UserAgent;
 use LWP::UserAgent;
 use HTTP::Request;
 
+use OpusVL::ACME::C19;
 
 # Wait for a connection to ehrbase so we can check if templates are already 
 # availible, if not then upload it.
@@ -54,9 +55,11 @@ $| = 1;
 # Version of this software
 my $VERSION = '0.001';
 
-my $dsn         =   'DBI:Pg:dbname=c19';
-my $uuid        =   Data::UUID->new;
-my $json        =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+my $dsn                 =   'DBI:Pg:dbname=c19';
+my $uuid                =   Data::UUID->new;
+my $json                =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+# news module started in LOUD mode, remove '1' to disable
+my $news2_calculator    =   OpusVL::ACME::C19->new(1);
 
 my $global      = {
     sessions    =>  {},
