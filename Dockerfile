@@ -25,11 +25,13 @@ RUN cpanm -n \
     Try::Tiny \
     URI \
     URI::QueryParam \
-    LWP::UserAgent.pm
+    LWP::UserAgent.pm 
 
 COPY app /opt/C19
 
 COPY build-asset/dumb-init_1.2.4_x86_64 /dumb-init
+COPY build-asset/OpusVL-ACME-C19-0.001.tar.gz /root/OpusVL-ACME-C19-0.001.tar.gz
+RUN cpanm /root/OpusVL-ACME-C19-0.001.tar.gz
 
 RUN chmod +x /dumb-init
 
