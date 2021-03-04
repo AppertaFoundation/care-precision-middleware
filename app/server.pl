@@ -1894,11 +1894,6 @@ sub make_up_score {
               "value" => "35.1-36.0",
               "ordinal" => 1
             },
-            "clinical_risk_category" => {
-              "code" => "at0059",
-              "value" => "Medium",
-              "terminology" => "local"
-            },
             "total_score" => (int rand 20) + 1,
         };
     }
