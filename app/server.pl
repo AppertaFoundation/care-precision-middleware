@@ -555,7 +555,6 @@ my $handler__cdr_draft = POE::Session->create(
 
             if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
                 my $patient = $global->{uuids}->{$patient_uuid};
-                my $patient = $global->{uuids}->{$patient_uuid};
 
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
@@ -1699,7 +1698,6 @@ sub get_compositions($patient_uuid) {
                         },
                         'total_score' => $news2_score->$dig_into_xml_for({ name => "Total score" }, 'value[xsi\:type] > magnitude'),
                     },
-
                 }
             };
         }
@@ -1861,6 +1859,18 @@ sub make_up_score {
     }
 
     if ($assessment->{news2}) {
+        # Actually sent from the frontend: $assessment-{news2}
+        say STDERR Dumper($assessment->{news2});
+        $news2_calculator->news2_calculate_score({
+            'respiration_rate'          =>  10,
+            'spo2_scale_1'              =>  30,
+            'consciousness'             =>  "CVPU",
+            'air_or_oxygen'             =>  "Oxygen",
+            'pulse'                     =>  112,
+            'temperature'               =>  38.2,
+            'systolic_blood_pressure'   =>  100
+        });
+        # I need to fill in this with the real results:
         $assessment->{news2}->{score} = {
             "respiration_rate" => {
               "code" => "at0020",
