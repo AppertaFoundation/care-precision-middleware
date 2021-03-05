@@ -1859,55 +1859,63 @@ sub make_up_score {
     }
 
     if ($assessment->{news2}) {
-        # Actually sent from the frontend: $assessment-{news2}
-        say STDERR Dumper($assessment->{news2});
-        $news2_calculator->news2_calculate_score({
-            'respiration_rate'          =>  10,
-            'spo2_scale_1'              =>  30,
-            'consciousness'             =>  "CVPU",
-            'air_or_oxygen'             =>  "Oxygen",
-            'pulse'                     =>  112,
-            'temperature'               =>  38.2,
-            'systolic_blood_pressure'   =>  100
+        # NEED THESE:
+
+        my $news2_scoring = $news2_calculator->news2_calculate_score({
+            'respiration_rate'          =>  $assessment->{news2}->{respirations}->{magnitude},
+            'spo2_scale_1'              =>  $assessment->{news2}->{spo2},
+            'pulse'                     =>  $assessment->{news2}->{pulse}->{magnitude},
+            'temperature'               =>  $assessment->{news2}->{temperature}->{magnitude},
+            'systolic_blood_pressure'   =>  $assessment->{news2}->{systolic}->{magnitude},
+            'air_or_oxygen'             =>  defined($assessment->{news2}->{inspired_oxygen}->{flow_rate}) ? 'Oxygen' : 'Air',
+            'consciousness'             =>  do {
+                my $return_value;
+                my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? 
+                                        $assessment->{news2}->{acvpu}->{value} : 'Alert';
+                if      ($submitted_value =~ m/^Confused|Voice|Pain|Unresponsive$/) { $return_value = 'CVPU' }
+                else                                                                { $return_value = 'Alert' }
+                $return_value
+            }
         });
+
         # I need to fill in this with the real results:
         $assessment->{news2}->{score} = {
             "respiration_rate" => {
-              "code" => "at0020",
-              "value" => "21-24",
-              "ordinal" => 2
+              "code"    => "at0020",
+              "ordinal" => $news2_scoring->{news2}->{respiration_rate}->[0],
+              "value"   => $news2_scoring->{news2}->{respiration_rate}->[1]
             },
             "spo_scale_1" => {
-              "code" => "at0031",
-              "value" => "94-95",
-              "ordinal" => 1
+              "code"    => "at0031",
+              "value"   => $news2_scoring->{news2}->{spo2_scale_1}->[1],
+              "ordinal" => $news2_scoring->{news2}->{spo2_scale_1}->[0]
             },
             "air_or_oxygen" => {
-              "code" => "at0036",
-              "value" => "Air",
-              "ordinal" => 0
+              "code"    => "at0036",
+              "value"   => $news2_scoring->{news2}->{air_or_oxygen}->[1],
+              "ordinal" => $news2_scoring->{news2}->{air_or_oxygen}->[0]
             },
             "systolic_blood_pressure" => {
-              "code" => "at0017",
-              "value" => "≤90",
-              "ordinal" => 3
+              "code"    => "at0017",
+              "value"   => $news2_scoring->{news2}->{systolic_blood_pressure}->[1],
+              "ordinal" => $news2_scoring->{news2}->{systolic_blood_pressure}->[0]
             },
             "pulse" => {
-              "code" => "at0013",
-              "value" => "51-90",
-              "ordinal" => 0
+              "code"    => "at0013",
+              "value"   => $news2_scoring->{news2}->{pulse}->[1],
+              "ordinal" => $news2_scoring->{news2}->{pulse}->[0]
             },
             "consciousness" => {
-              "code" => "at0024",
-              "value" => "Alert",
-              "ordinal" => 0
+              "code"    => "at0024",
+              "value"   => $news2_scoring->{news2}->{consciousness}->[1],
+              "ordinal" => $news2_scoring->{news2}->{consciousness}->[0]
             },
             "temperature" => {
-              "code" => "at0023",
-              "value" => "35.1-36.0",
-              "ordinal" => 1
+              "code"    => "at0023",
+              "value"   => $news2_scoring->{news2}->{consciousness}->[1],
+              "ordinal" => $news2_scoring->{news2}->{consciousness}->[0]
             },
-            "total_score" => (int rand 20) + 1,
+            "total_score" => $news2_scoring->{state}->{score}
         };
     }
 
