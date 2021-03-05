@@ -1882,8 +1882,8 @@ sub make_up_score {
         $assessment->{news2}->{score} = {
             "respiration_rate" => {
               "code"    => "at0020",
-              "ordinal" => $news2_scoring->{news2}->{respiration_rate}->[0],
-              "value"   => $news2_scoring->{news2}->{respiration_rate}->[1]
+              "value"   => $news2_scoring->{news2}->{respiration_rate}->[1],
+              "ordinal" => $news2_scoring->{news2}->{respiration_rate}->[0]
             },
             "spo_scale_1" => {
               "code"    => "at0031",
@@ -1912,10 +1912,10 @@ sub make_up_score {
             },
             "temperature" => {
               "code"    => "at0023",
-              "value"   => $news2_scoring->{news2}->{consciousness}->[1],
-              "ordinal" => $news2_scoring->{news2}->{consciousness}->[0]
+              "value"   => $news2_scoring->{news2}->{temperature}->[1],
+              "ordinal" => $news2_scoring->{news2}->{temperature}->[0]
             },
-            "total_score" => $news2_scoring->{state}->{score}
+            "total_score" => $news2_scoring->{news2}->{state}->{score}
         };
     }
 
