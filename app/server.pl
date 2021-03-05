@@ -59,7 +59,7 @@ my $dsn                 =   'DBI:Pg:dbname=c19';
 my $uuid                =   Data::UUID->new;
 my $json                =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
 # news module started in LOUD mode, remove '1' to disable
-my $news2_calculator    =   OpusVL::ACME::C19->new(1);
+my $news2_calculator    =   OpusVL::ACME::C19->new();
 
 my $global      = {
     sessions    =>  {},
