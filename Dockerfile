@@ -1,10 +1,13 @@
 FROM perl:5.30
 
+RUN apt install libsqlite3-dev
+
 RUN cpanm -n \
     Cookie::Baker \
     Data::Dumper \
     Data::UUID \
     DateTime \
+    DBD::SQLite \
     File::Slurp \
     HTTP::Cookies \
     HTTP::Request::Common \
