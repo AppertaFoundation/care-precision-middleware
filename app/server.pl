@@ -1967,3 +1967,8 @@ sub initial_data($self) {
     # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210')
     # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')
 }
+
+sub check_init($self) {
+    # SELECT count('uuid') FROM patient; 
+    # if > 0 we are init'd
+}
