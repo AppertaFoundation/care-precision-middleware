@@ -152,175 +152,6 @@ my $create_ehr_body = {
     "is_modifiable" =>  JSON::MaybeXS::true,
     "is_queryable"  =>  JSON::MaybeXS::true
 };
-my $load_patients = sub {
-    my $datetime = DateTime->now;
-    my $patient_list = decode_json(path('patients.json')->slurp);
-
-    my @commit_list;
-
-    # Simplify names, add assessments and digitize date of birth
-    MAIN: foreach my $patient (@{$patient_list->{entry}}) {
-        $patient->{_compositions} = [];
-
-        my $name_res    =   $patient->{resource}->{name};
-        my $name_uuid   =   $patient->{resource}->{uuid};
-        my $name_use    =   [];
-        my $name_only;
-
-        foreach my $oldname (@{$name_res})  {
-            my $new_name = [
-                $oldname->{prefix}->[0] || '',
-                $oldname->{given}->[0] || '',
-                $oldname->{family} || ''
-            ];
-
-            if ($oldname->{use} && $oldname->{use} eq 'official') {
-                $name_use = $new_name;
-                $name_only = join(' ',
-                    $oldname->{given}->[0] || '',
-                    $oldname->{family} || ''
-                );
-            }
-            else {
-                push @{$patient->{resource}->{name_other}},$new_name;
-            }
-        }
-
-        # Add a name without its prefix
-        $patient->{resource}->{name_search} = $name_only;
-        # Add the full name as the first name_other
-        push @{$patient->{resource}->{name_other}},$name_use;
-        # Overwrite the old style name with a normal one
-        $patient->{resource}->{name} = join(' ',@{$name_use});
-
-        # Move the nhs-number to make it easier to search
-        $patient->{resource}->{nhsnumber}   = do {
-            my $return;
-            foreach my $id (@{$patient->{resource}->{identifier}}) {
-                if (
-                    defined $id->{'system'} 
-                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
-                )  {
-                    $return = $id->{'value'};
-                }
-            }
-            $return
-        };
-
-        # If there is no nhs number we do not want it
-        if (!$patient->{resource}->{nhsnumber}) {
-            next MAIN;
-        }
-
-        my $patient_exist = do {
-            my $nhs = $patient->{resource}->{nhsnumber}||0;
-            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
-            .   "?subject_id=$nhs"
-            .   "&subject_namespace=nhs_number";
-
-            my $request = GET(
-                $req_url,
-                'Accept'        =>  'application/json',
-                'Content-Type'  =>  'application/json',
-                Content         =>  ''
-            );
-
-            my $ua = LWP::UserAgent->new();
-            my $res = $ua->request($request);
-
-            my $return;
-            my $return_code = $res->code;
-            if ($return_code == 200) {
-                my $content = decode_json($res->content());
-                $return = $content->{ehr_id}->{value};
-            }
-            elsif ($return_code == 404)   {
-                $return = undef;
-            }
-            else {
-                warn "non captured response: $req_url ($return_code)";
-            }
-
-            $return ? uc($return) : undef
-        };
-
-        # Adjust the base profile to add the correct name
-        my $create_ehr_body_clone = dclone($create_ehr_body);
-        $create_ehr_body_clone->{name}->{value}
-            =   $patient->{resource}->{name};
-        $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
-            =   $patient->{resource}->{nhsnumber};
-
-        # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
-
-        $patient->{_uuid} = do {
-            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$name_uuid";
-
-            if (!defined $patient_exist) {
-                my $request = PUT(
-                    $req_url,
-                    'Accept'        =>  'application/json',
-                    'Content-Type'  =>  'application/json',
-                    Content         =>  encode_json($create_ehr_body_clone)
-                );
-
-                my $ua = LWP::UserAgent->new();
-                my $res = $ua->request($request);
-
-                if ($res->code != 204)  {
-                    die "Failure creating patient!";
-                }
-
-                my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
-                $patient_exist = uc($uuid_extract)
-            }
-
-            say "Patient " 
-                . $patient_exist
-                . ' linked with: '
-                . $patient->{resource}->{nhsnumber}
-                . ' '
-                . $patient->{resource}->{name};
-
-            $patient_exist
-        };
-
-        # Convert Date of birth to digitally calculable date
-        my ($dob_year,$dob_month,$dob_day) = 
-            split(/\-/,$patient->{resource}->{'birthDate'});
-
-        $patient->{resource}->{'birthDateAsString'} =
-            join('-',$dob_year,$dob_month,$dob_day);
-
-        $patient->{resource}->{'birthDate'} =
-            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
-
-        push @commit_list,$patient;
-    }
-
-    foreach my $customer (@commit_list) {
-        my $name        =   $customer->{resource}->{name};
-        my $identifier  =   uc($customer->{_uuid});
-
-        # Refactor the structure of the datasource, this would be a 
-        # call to a specialist service in DITO Service_Client_UserDB
-        my $datablock = {
-            'name'              =>  $name,
-            'id'                =>  $identifier,
-            'birthDate'         =>  $customer->{resource}->{'birthDate'},
-            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
-            'name_search'       =>  $customer->{resource}->{'name_search'},
-            'gender'            =>  $customer->{resource}->{'gender'},
-            'identifier'        =>  $customer->{resource}->{'identifier'},
-            'location'          =>  'Bedroom',
-            'assessment'        =>  $customer->{assessment},
-            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
-        };
-
-        $global->{patient_db}->{$identifier} = $datablock;
-        $global->{uuids}->{$identifier} = $customer;
-    }
-};
 
 while (my $query = $connect_test->()) {
     if ($query->{code} == 200) {
@@ -346,9 +177,6 @@ while (my $query = $connect_test->()) {
         sleep 5;
     }
 }
-
-# Load the patients into memory
-$load_patients->();
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -420,7 +248,7 @@ my $service_auth = POE::Session->create(
         },
         'authorise'         =>  sub {
             my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
-
+            
         }
     },
 );
@@ -1974,34 +1802,28 @@ sub new {
         'dbh'   =>  $dbh
     }, $class;
 
-    if ($debug) {
-        say STDERR "Row count is now: ".$self->row_count();
-    }
+    if ($debug) { say STDERR "Row count is now: ".$self->row_count() }
 
     # Check if we are init'd
     if ($self->row_count() == 0) {
-        if ($debug) {
-            say STDERR "Filling in example patients";
-        }
+        if ($debug) { say STDERR "Filling in example patients" }
         $self->init_data();
     }
 
-    if ($debug) {
-        say STDERR "Row count is now: ".$self->row_count();
-    }
+    if ($debug) { say STDERR "Row count is now: ".$self->row_count() }
 
     return $self;
 }
 
 sub init_data($self) {
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210'");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210')");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')");
 }
 
 sub row_count($self) {
@@ -2009,4 +1831,12 @@ sub row_count($self) {
     $sth->execute();
     my $row = $sth->fetch;
     return ($row->[0] + 0);
+}
+
+sub return_fields($self,@col_names) {
+    my $placeholders    =   join(',',map { $_ = "?" } @col_names);
+    my $sth             =   $self->{dbh}->prepare("SELECT $placeholders FROM patient LIMIT 1");
+    $sth->execute(@col_names);
+    my $row = $sth->fetch;
+    return $row;
 }
