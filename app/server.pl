@@ -1957,7 +1957,7 @@ sub new {
     if ($set_debug) { $debug = 1 }
 
     my $self = bless {
-        'dbh'   =   DBI->connect("dbi:SQLite:dbname=patient.json","","") or die $!;
+        'dbh'   =>  DBI->connect("dbi:SQLite:dbname=patient.json","","") or die $!
     }, $class;
 
     return $self;
