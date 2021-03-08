@@ -319,22 +319,6 @@ my $load_patients = sub {
         $global->{uuids}->{$identifier} = $customer;
     }
 };
-my $send_composition($composition,$ehrid) {
-    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$ehrid/composition";
-
-    my $request = POST(
-        $req_url,
-        'Accept'        => 'application/json',
-        'Content-Type'  => 'application/xml',
-        'Prefer'        => 'return=minimal',
-        Content         =>  $template
-    );
-
-    my $ua = LWP::UserAgent->new();
-    my $res = $ua->request($request);
-
-    return { code=>$res->code() };
-}
 
 while (my $query = $connect_test->()) {
     if ($query->{code} == 200) {
