@@ -58,8 +58,9 @@ my $VERSION = '0.001';
 my $dsn                 =   'DBI:Pg:dbname=c19';
 my $uuid                =   Data::UUID->new;
 my $json                =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+
+# news/db module started in LOUD mode, remove '1' to disable
 my $dbh                 =   DBHelper->new(1);
-# news module started in LOUD mode, remove '1' to disable
 my $news2_calculator    =   OpusVL::ACME::C19->new(1);
 
 my $global      = {
@@ -1930,6 +1931,8 @@ sub make_up_score {
 }
 
 
+
+
 package DBHelper;
 
 # Internal perl modules (core)
@@ -1956,25 +1959,54 @@ sub new {
 
     if ($set_debug) { $debug = 1 }
 
+    my $dbh = DBI->connect(
+        'dbi:SQLite:dbname=patient.db',
+        '',
+        '',
+        {
+            'AutoCommit'                    =>  1,
+            'RaiseError'                    =>  1, 
+            'sqlite_see_if_its_a_number'    =>  1
+        }
+    );
+
     my $self = bless {
-        'dbh'   =>  DBI->connect("dbi:SQLite:dbname=patient.json","","") or die $!
+        'dbh'   =>  $dbh
     }, $class;
+
+    if ($debug) {
+        say STDERR "Row count is now: ".$self->row_count();
+    }
+
+    # Check if we are init'd
+    if ($self->row_count() == 0) {
+        if ($debug) {
+            say STDERR "Filling in example patients";
+        }
+        $self->init_data();
+    }
+
+    if ($debug) {
+        say STDERR "Row count is now: ".$self->row_count();
+    }
 
     return $self;
 }
 
-sub initial_data($self) {
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210')
-    # INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')
+sub init_data($self) {
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210'");
+    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531'");
 }
 
-sub check_init($self) {
-    # SELECT count('uuid') FROM patient; 
-    # if > 0 we are init'd
+sub row_count($self) {
+    my $sth = $self->{dbh}->prepare("SELECT count('uuid') FROM patient");
+    $sth->execute();
+    my $row = $sth->fetch;
+    return ($row->[0] + 0);
 }
