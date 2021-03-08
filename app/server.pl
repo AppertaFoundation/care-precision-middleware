@@ -59,7 +59,7 @@ my $dsn                 =   'DBI:Pg:dbname=c19';
 my $uuid                =   Data::UUID->new;
 my $json                =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
 # news module started in LOUD mode, remove '1' to disable
-my $news2_calculator    =   OpusVL::ACME::C19->new();
+my $news2_calculator    =   OpusVL::ACME::C19->new(1);
 
 my $global      = {
     sessions    =>  {},
@@ -319,6 +319,22 @@ my $load_patients = sub {
         $global->{uuids}->{$identifier} = $customer;
     }
 };
+my $send_composition($composition,$ehrid) {
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$ehrid/composition";
+
+    my $request = POST(
+        $req_url,
+        'Accept'        => 'application/json',
+        'Content-Type'  => 'application/xml',
+        'Prefer'        => 'return=minimal',
+        Content         =>  $template
+    );
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    return { code=>$res->code() };
+}
 
 while (my $query = $connect_test->()) {
     if ($query->{code} == 200) {
@@ -1915,8 +1931,9 @@ sub make_up_score {
               "value"   => $news2_scoring->{news2}->{temperature}->[1],
               "ordinal" => $news2_scoring->{news2}->{temperature}->[0]
             },
-            "total_score" => $news2_scoring->{news2}->{state}->{score}
+            "total_score" => $news2_scoring->{state}->{score}
         };
+
     }
 
     if ($assessment->{covid}) {
