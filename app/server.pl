@@ -1943,6 +1943,9 @@ use experimental qw(signatures);
 use Carp qw(cluck longmess shortmess);
 use Data::Dumper;
 
+# We need SQLite as well
+use DBI;
+
 # Version of this software
 my $debug = 0;
 
@@ -1952,7 +1955,9 @@ sub new {
 
     if ($set_debug) { $debug = 1 }
 
-    my $self = bless {}, $class;
+    my $self = bless {
+        'dbh'   =   DBI->connect("dbi:SQLite:dbname=patient.json","","") or die $!;
+    }, $class;
 
     return $self;
 }
