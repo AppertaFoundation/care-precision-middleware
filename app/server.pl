@@ -178,6 +178,8 @@ while (my $query = $connect_test->()) {
     }
 }
 
+say STDERR Dumper($dbh->return_col('uuid'));
+
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
     'PORT'          =>      18080,
@@ -248,7 +250,7 @@ my $service_auth = POE::Session->create(
         },
         'authorise'         =>  sub {
             my ($kernel,$heap,$packet)  =   @_[KERNEL,HEAP,ARG0];
-            
+
         }
     },
 );
@@ -376,8 +378,10 @@ my $handler__cdr_draft = POE::Session->create(
 
             my $payload = decode_json($packet->{request}->decoded_content());
 
-            my $assessment = $payload->{assessment};
-            my $patient_uuid = $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
+            my $assessment      =
+                $payload->{assessment};
+            my $patient_uuid    =
+                $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
 
             say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
             say STDERR Dumper($assessment);
@@ -1802,12 +1806,11 @@ sub new {
         'dbh'   =>  $dbh
     }, $class;
 
-    if ($debug) { say STDERR "Row count is now: ".$self->row_count() }
-
-    # Check if we are init'd
-    if ($self->row_count() == 0) {
-        if ($debug) { say STDERR "Filling in example patients" }
-        $self->init_data();
+    # Double check the table exists and has content
+    my $create_table = $self->check_table_exist('patient');
+    if ($debug) { say STDERR "Create table: $create_table" }
+    if (($create_table == 0) || ($self->row_count() == 0)) {
+        $self->init_data($create_table);
     }
 
     if ($debug) { say STDERR "Row count is now: ".$self->row_count() }
@@ -1815,15 +1818,25 @@ sub new {
     return $self;
 }
 
-sub init_data($self) {
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210')");
-    $self->{dbh}->do("INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')");
+sub init_data($self,$create_table) {
+    if ($create_table == 0) {
+        $self->{dbh}->do("CREATE TABLE patient (uuid string PRIMARY KEY,name string NOT NULL,birth_date number NOT NULL,birth_date_string string NOT NULL,name_search string NOT NULL,gender string NOT NULL, location string default 'Bedroom', nhsnumber number NOT NULL)");
+    }
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Delisay Santos','20000731','2000-07-31','Delisay Santos','female','Bedroom','9876543210')");
+    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')");
+}
+
+sub check_table_exist($self,$tablename) {
+    my $sth = $self->{dbh}->prepare("SELECT count(name) FROM sqlite_master WHERE type='table' AND name=?");
+    $sth->execute($tablename);
+    my $row = $sth->fetch;
+    return $row->[0] ? 1 : 0;
 }
 
 sub row_count($self) {
@@ -1839,4 +1852,11 @@ sub return_fields($self,@col_names) {
     $sth->execute(@col_names);
     my $row = $sth->fetch;
     return $row;
+}
+
+sub return_col($self,$col_name) {
+    my $sth     =   $self->{dbh}->prepare('SELECT ? FROM patient');
+    $sth->execute($col_name);
+    my @rows    =   $sth->fetchall_arrayref;
+    return \@rows;
 }
