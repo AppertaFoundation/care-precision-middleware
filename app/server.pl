@@ -726,7 +726,7 @@ my $handler__cdr = POE::Session->create(
 
                 my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
 
-                $tt2->process('template.xml', {
+                $tt2->process('composition.xml.tt2', {
                     json_path => $json_path,
                     generate_uuid => sub { $uuid->to_string($uuid->create) } },
                 \my $xml) or die $tt2->error;
