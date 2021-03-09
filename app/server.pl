@@ -262,7 +262,6 @@ foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
     my $res             =   $ehrclient->check_ehr_exists($patient_nhsnumber);
 
     if ($res->{code} != 200) {
-        say STDERR "Sending: $patient_ehrid";
         my $create_record = $ehrclient->create_ehr(
             $patient_ehrid,
             $patient_name,
@@ -634,8 +633,8 @@ my $handler__cdr = POE::Session->create(
             # Create a place to put everything we need for ease and clarity
             my $composition_uuid = $uuid->to_string($uuid->create());
             my $composition_obj =   {
-                uuid    =>  $composition_uuid,
-                input   =>  $passed_objects
+                'uuid'  =>  $composition_uuid,
+                'input' =>  $passed_objects
             };
 
             my $xml_transformation = sub {
@@ -1460,11 +1459,18 @@ sub new_session($sessionid) {
 }
 
 sub get_compositions($patient_uuid) {
-    if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
-        $patient_uuid = $patient_uuid ? $patient_uuid : '';
+    say STDERR "0 Valid uuid: ".Dumper($patient_uuid);
+
+    my $valid_uuid = $dbh->return_single_cell('uuid',$patient_uuid,'uuid');
+
+    if (!$valid_uuid) {
+        # FUCK
+        $patient_uuid = $valid_uuid;
         say STDERR "Invalid UUID passed to get_compositions UUID:($patient_uuid)";
         die;
     }
+
+    my $patient_uuid = $valid_uuid;
 
     my $composition_objs = do {
         my $query = {
