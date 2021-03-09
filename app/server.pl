@@ -262,6 +262,7 @@ foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
     my $res             =   $ehrclient->check_ehr_exists($patient_nhsnumber);
 
     if ($res->{code} != 200) {
+        say STDERR "Sending: $patient_ehrid";
         my $create_record = $ehrclient->create_ehr(
             $patient_ehrid,
             $patient_name,
@@ -2015,15 +2016,15 @@ sub _create_ehr($self) {
     return {
         "_type"             =>  "EHR_STATUS",
         "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
-        "name"              =>  "EHR Status",
+        "name"              =>  {},
         "subject"           =>  {
             "external_ref"      =>  {
-            "id"                    =>  {
-                "_type"                 =>  "GENERIC_ID",
-                "scheme"                =>  "nhs_number"
-            },
-            "namespace" =>  "EHR",
-            "type"      =>  "PERSON"
+                "id"                    =>  {
+                    "_type"                 =>  "GENERIC_ID",
+                    "scheme"                =>  "nhs_number"
+                },
+                "namespace" =>  "EHR",
+                "type"      =>  "PERSON"
             }
         },
         "is_modifiable" =>  JSON::MaybeXS::true,
@@ -2051,26 +2052,26 @@ sub con_test($self) {
 }
 
 sub create_ehr($self,$uuid,$name,$nhsnumber) {
-    my $ehrbase =   $self->{ehrbase};
-    my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/ehr/$uuid";
-    say STDERR "req_url_create_ehr: $req_url";
+    my $ehrbase             =   $self->{ehrbase};
+    my $req_url             =   "$ehrbase/ehrbase/rest/openehr/v1/ehr/$uuid";
+    my $create_ehr_script   =   $self->_create_ehr();
 
-    my $create_ehr_script = $self->_create_ehr();
-    $create_ehr_script->{name}
+    $create_ehr_script->{name}->{value}
         =   $name;
     $create_ehr_script->{subject}->{external_ref}->{id}->{value}
         =   $nhsnumber;
 
-    my $json_script = encode_json($create_ehr_script);
+    my $json_script         =   encode_json($create_ehr_script);
 
     say STDERR "Creation script: $json_script";
+    say STDERR "URL: $req_url";
 
     my $request = PUT(
         $req_url,
-        'Accept'        =>  'application/json',
-        'Content-Type'  =>  'application/json',
-        'PREFER'        =>  'representation=minimal',
-        Content         =>  $json_script
+        'Accept'                =>  'application/json',
+        'Content-Type'          =>  'application/json',
+        'PREFER'                =>  'representation=minimal',
+        Content                 =>  $json_script
     );
 
     my $res = $self->{agent}->request($request);
@@ -2089,11 +2090,9 @@ sub create_ehr($self,$uuid,$name,$nhsnumber) {
 
 sub check_ehr_exists($self,$nhs) {
     my $ehrbase =   $self->{ehrbase};
-    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
+    my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/ehr"
     .   "?subject_id=$nhs"
-    .   "&subject_namespace=nhs_number";
-
-    say STDERR "Running: $req_url";
+    .   "&subject_namespace=EHR";
 
     my $request = GET(
         $req_url,
