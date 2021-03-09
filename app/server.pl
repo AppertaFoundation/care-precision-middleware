@@ -879,7 +879,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $search_result   =   [];
             my $search_db       =   $global->{patient_db};
 
-            foreach my $uuid_return ($dbh->return_col('uuid')) {
+            foreach my $uuid_return ($dbh->return_col('uuid')->[0]) {
                 my $userid  =
                     $uuid_return->[0];
 
@@ -1459,7 +1459,9 @@ sub new_session($sessionid) {
 }
 
 sub get_compositions($patient_uuid) {
-    say STDERR "0 Valid uuid: ".Dumper($patient_uuid);
+    if (!defined $patient_uuid) {
+        die "No uuid passed to function";
+    }
 
     my $valid_uuid = $dbh->return_single_cell('uuid',$patient_uuid,'uuid');
 
@@ -1470,7 +1472,7 @@ sub get_compositions($patient_uuid) {
         die;
     }
 
-    my $patient_uuid = $valid_uuid;
+    $patient_uuid = $valid_uuid;
 
     my $composition_objs = do {
         my $query = {
