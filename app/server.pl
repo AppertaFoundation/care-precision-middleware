@@ -99,122 +99,109 @@ my $global      = {
 };
 
 # The old patient DB to not break functionality
-# my $load_patients = sub {
-#     my $datetime        =   DateTime->now;
-#     my $patient_list    =   decode_json(path('patients.json')->slurp);
+if (1) {
+    my $datetime = DateTime->now;
+    my $patient_list = decode_json(path('patients.json')->slurp);
 
-#     my $patient_listx   =   $dbh->return_col('uuid');
-#     say STDERR Dumper($patient_listx);
+    my @commit_list;
 
-#     my @commit_list;
+    # Simplify names, add assessments and digitize date of birth
+    foreach my $patient (@{$patient_list->{entry}}) {
+        $patient->{_compositions} = [];
 
-#     # Simplify names, add assessments and digitize date of birth
-#     foreach my $patient (@{$patient_list->{entry}}) {
-#         $patient->{_compositions} = [];
+        my $name_res    =   $patient->{resource}->{name};
+        my $name_uuid   =   $patient->{resource}->{uuid};
+        my $name_use    =   [];
+        my $name_only;
 
-#         my $name_res    =   $patient->{resource}->{name};
-#         my $name_uuid   =   $patient->{resource}->{uuid};
-#         my $name_use    =   [];
-#         my $name_only;
+        foreach my $oldname (@{$name_res})  {
+            my $new_name = [
+                $oldname->{prefix}->[0] || '',
+                $oldname->{given}->[0] || '',
+                $oldname->{family} || ''
+            ];
 
-#         # Move the nhs-number to make it easier to search
-#         $patient->{resource}->{nhsnumber}   = do {
-#             my $return;
-#             foreach my $id (@{$patient->{resource}->{identifier}}) {
-#                 if (
-#                     defined $id->{'system'} 
-#                     && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
-#                 )  {
-#                     $return = $id->{'value'};
-#                 }
-#             }
-#             $return
-#         };
+            if ($oldname->{use} && $oldname->{use} eq 'official') {
+                $name_use = $new_name;
+                $name_only = join(' ',
+                    $oldname->{given}->[0] || '',
+                    $oldname->{family} || ''
+                );
+            }
+            else {
+                push @{$patient->{resource}->{name_other}},$new_name;
+            }
+        }
 
-#         # If there is no nhs number we do not want it
-#         if (!$patient->{resource}->{nhsnumber}) {
-#             next;
-#         }
+        # Add a name without its prefix
+        $patient->{resource}->{name_search} = $name_only;
+        # Add the full name as the first name_other
+        push @{$patient->{resource}->{name_other}},$name_use;
+        # Overwrite the old style name with a normal one
+        $patient->{resource}->{name} = join(' ',@{$name_use});
 
-#         # Look for the remaining details in the database
-#         $patient->{resource}->{name} = $dbh->return_single_cell(
-#             'nhsnumber',
-#             $patient->{resource}->{nhsnumber},
-#             'name'
-#         );
+        # Move the nhs-number to make it easier to search
+        $patient->{resource}->{nhsnumber}   = do {
+            my $return;
+            foreach my $id (@{$patient->{resource}->{identifier}}) {
+                if (
+                    defined $id->{'system'} 
+                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
+                )  {
+                    $return = $id->{'value'};
+                }
+            }
+            $return
+        };
 
-#         my $patient_exist = do {
-#             my $nhs = $patient->{resource}->{nhsnumber}||0;
-#             my $res = $ehrclient->check_ehr_exists($nhs);
+        # If there is no nhs number we do not want it
+        if (!$patient->{resource}->{nhsnumber}) {
+            next;
+        }
 
-#             my $return;
-#             if ($res->{code} == 200) {
-#                 $return = $res->{content}->{ehr_id}->{value};
-#             }
+        # Convert Date of birth to digitally calculable date
+        my ($dob_year,$dob_month,$dob_day) = 
+            split(/\-/,$patient->{resource}->{'birthDate'});
 
-#             $return ? uc($return) : undef
-#         };
+        $patient->{resource}->{'birthDateAsString'} =
+            join('-',$dob_year,$dob_month,$dob_day);
 
-#         $patient->{_uuid} = do {
-#             if (!defined $patient_exist) {
-#                 my $res = $ehrclient->create_ehr(
-#                     $patient->{resource}->{name},
-#                     $patient->{resource}->{nhsnumber}
-#                 );
+        $patient->{resource}->{'birthDate'} =
+            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
 
-#                 if ($res->{code} != 204)  {
-#                     die "Failure creating patient!";
-#                 }
+        # Legacy
+        $patient->{_uuid} = $dbh->return_single_cell(
+            'nhsnumber',
+            $patient->{resource}->{nhsnumber},
+            'uuid'
+        );
 
-#                 $patient_exist = $res->{content};
-#             }
+        push @commit_list,$patient;
+    }
 
-#             say "Patient " 
-#                 . $patient_exist
-#                 . ' linked with: '
-#                 . $patient->{resource}->{nhsnumber}
-#                 . ' '
-#                 . $patient->{resource}->{name};
+    foreach my $customer (@commit_list) {
+        my $name        =   $customer->{resource}->{name};
+        my $identifier  =   uc($customer->{_uuid});
 
-#             $patient_exist
-#         };
+        # Refactor the structure of the datasource, this would be a 
+        # call to a specialist service in DITO Service_Client_UserDB
+        my $datablock = {
+            'name'              =>  $name,
+            'id'                =>  $identifier,
+            'birthDate'         =>  $customer->{resource}->{'birthDate'},
+            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+            'name_search'       =>  $customer->{resource}->{'name_search'},
+            'gender'            =>  $customer->{resource}->{'gender'},
+            'identifier'        =>  $customer->{resource}->{'identifier'},
+            'location'          =>  'Bedroom',
+            'assessment'        =>  $customer->{assessment},
+            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
+        };
 
-#         # Convert Date of birth to digitally calculable date
-#         my ($dob_year,$dob_month,$dob_day) = 
-#             split(/\-/,$patient->{resource}->{'birthDate'});
-
-#         $patient->{resource}->{'birthDateAsString'} =
-#             join('-',$dob_year,$dob_month,$dob_day);
-
-#         $patient->{resource}->{'birthDate'} =
-#             join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
-
-#         push @commit_list,$patient;
-#     }
-
-#     foreach my $customer (@commit_list) {
-#         my $name        =   $customer->{resource}->{name};
-#         my $identifier  =   uc($customer->{_uuid});
-
-#         # Refactor the structure of the datasource, this would be a 
-#         # call to a specialist service in DITO Service_Client_UserDB
-#         my $datablock = {
-#             'name'              =>  $name,
-#             'id'                =>  $identifier,
-#             'birthDate'         =>  $customer->{resource}->{'birthDate'},
-#             'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
-#             'name_search'       =>  $customer->{resource}->{'name_search'},
-#             'gender'            =>  $customer->{resource}->{'gender'},
-#             'identifier'        =>  $customer->{resource}->{'identifier'},
-#             'location'          =>  'Bedroom',
-#             'assessment'        =>  $customer->{assessment},
-#             'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
-#         };
-
-#         $global->{patient_db}->{$identifier} = $datablock;
-#         $global->{uuids}->{$identifier} = $customer;
-#     }
-# };
+        $global->{patient_db}->{$identifier} = $datablock;
+        $global->{uuids}->{$identifier} = $customer;
+    }
+};
 
 # Make sure ehrbase has its base template
 while (my $query = $ehrclient->con_test()) {
