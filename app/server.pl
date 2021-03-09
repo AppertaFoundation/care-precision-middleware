@@ -55,40 +55,15 @@ $| = 1;
 # Version of this software
 my $VERSION = '0.001';
 
-my $dsn                 =   'DBI:Pg:dbname=c19';
-my $uuid                =   Data::UUID->new;
-my $json                =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
-
-# news/db module started in LOUD mode, remove '1' to disable
-my $dbh                 =   DBHelper->new(1);
-my $news2_calculator    =   OpusVL::ACME::C19->new(1);
-
-my $global      = {
-    sessions    =>  {},
-    config      =>  {
-        session_timeout =>  120
-    },
-    patient_db  =>  {},
-    handler     =>  {},
-    helper      =>  {
-        'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
-        'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
-    },
-    compose     =>  {},
-    uuids       =>  {}
-};
-
-my $pool = POE::Component::Client::Keepalive->new(
-    keep_alive    => 5,    # seconds to keep connections alive
-    max_open      => 100,   # max concurrent connections - total
-    max_per_host  => 20,    # max concurrent connections - per host
-    timeout       => 30,    # max time (seconds) to establish a new connection
-);
-
 POE::Component::Client::HTTP->spawn(
     Protocol            =>  'HTTP/1.1',
     Timeout             =>  60,
-    ConnectionManager   =>  $pool,
+    ConnectionManager   =>  POE::Component::Client::Keepalive->new(
+        keep_alive    => 5,     # seconds to keep connections alive
+        max_open      => 100,   # max concurrent connections - total
+        max_per_host  => 20,    # max concurrent connections - per host
+        timeout       => 30,    # max time (seconds) to establish a new connection
+    ),
     NoProxy             =>  [ "localhost", "127.0.0.1" ],
     Alias               =>  'webclient'
 );
@@ -96,43 +71,33 @@ POE::Component::Client::HTTP->spawn(
 my $api_prefix              =   '/c19-alpha/0.0.1';
 my $api_hostname            =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
 my ($api_hostname_cookie)   =   $ENV{FRONTEND_HOSTNAME} =~ m/^.*?(\..*)$/;
+my $ehrbase                 =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+my $dsn                     =   'DBI:Pg:dbname=c19';
 
-my $ehrbase_env             =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
-my $ehrbase                 =   $ehrbase_env;
+# Load JSON / UUID mnodules
+my $uuid                    =   Data::UUID->new;
+my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+
+# news/db module started in LOUD mode, remove '1' to disable
+my $dbh                     =   DBHelper->new(1);
+my $ehrclient               =   EHRHelper->new(1,$ehrbase);
+my $news2_calculator        =   OpusVL::ACME::C19->new(1);
+
+my $global      = {
+    sessions    =>  {},
+    config      =>  {
+        session_timeout =>  120
+    },
+    handler     =>  {},
+    helper      =>  {
+        'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
+        'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
+    },
+    uuids       =>  {}
+};
 
 # Arbitrary wait on startup (for ehrnbase initilisation)
-my $connect_test = sub {
-    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
-    my $request = GET(
-        $req_url,
-        'Accept' => 'application/json',
-        'Prefer' => 'return=minimal'
-    );
-
-    my $ua = LWP::UserAgent->new();
-    my $res = $ua->request($request);
-
-    say STDERR "Connect test: ".$res->code();
-    return  {code=>$res->code(),content=>$res->content()};
-};
-my $send_template = sub {
-    my $template = shift;
-    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
-
-    my $request = POST(
-        $req_url,
-        'Accept'        => 'application/xml',
-        'Content-Type'  => 'application/xml',
-        'Prefer'        => 'return=minimal',
-        Content         =>  $template
-    );
-
-    my $ua = LWP::UserAgent->new();
-    my $res = $ua->request($request);
-
-    return $res->code();
-};
-my $create_ehr_body = {
+my $create_ehr_body     =   {
     "_type"             =>  "EHR_STATUS",
     "archetype_node_id" =>  "openEHR-EHR-EHR_STATUS.generic.v1",
     "name"              =>  {
@@ -153,7 +118,259 @@ my $create_ehr_body = {
     "is_queryable"  =>  JSON::MaybeXS::true
 };
 
-while (my $query = $connect_test->()) {
+# The old patient DB to not break functionality
+my $load_patients = sub {
+    my $datetime = DateTime->now;
+    my $patient_list = decode_json(path('patients.json')->slurp);
+
+    my @commit_list;
+
+    # Simplify names, add assessments and digitize date of birth
+    MAIN: foreach my $patient (@{$patient_list->{entry}}) {
+        $patient->{_compositions} = [];
+
+        my $name_res    =   $patient->{resource}->{name};
+        my $name_uuid   =   $patient->{resource}->{uuid};
+        my $name_use    =   [];
+        my $name_only;
+
+        foreach my $oldname (@{$name_res})  {
+            my $new_name = [
+                $oldname->{prefix}->[0] || '',
+                $oldname->{given}->[0] || '',
+                $oldname->{family} || ''
+            ];
+
+            if ($oldname->{use} && $oldname->{use} eq 'official') {
+                $name_use = $new_name;
+                $name_only = join(' ',
+                    $oldname->{given}->[0] || '',
+                    $oldname->{family} || ''
+                );
+            }
+            else {
+                push @{$patient->{resource}->{name_other}},$new_name;
+            }
+        }
+
+        # Add a name without its prefix
+        $patient->{resource}->{name_search} = $name_only;
+        # Add the full name as the first name_other
+        push @{$patient->{resource}->{name_other}},$name_use;
+        # Overwrite the old style name with a normal one
+        $patient->{resource}->{name} = join(' ',@{$name_use});
+
+        # Move the nhs-number to make it easier to search
+        $patient->{resource}->{nhsnumber}   = do {
+            my $return;
+            foreach my $id (@{$patient->{resource}->{identifier}}) {
+                if (
+                    defined $id->{'system'} 
+                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
+                )  {
+                    $return = $id->{'value'};
+                }
+            }
+            $return
+        };
+
+        # If there is no nhs number we do not want it
+        if (!$patient->{resource}->{nhsnumber}) {
+            next MAIN;
+        }
+
+        my $patient_exist = do {
+            my $nhs = $patient->{resource}->{nhsnumber}||0;
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
+            .   "?subject_id=$nhs"
+            .   "&subject_namespace=nhs_number";
+
+            my $request = GET(
+                $req_url,
+                'Accept'        =>  'application/json',
+                'Content-Type'  =>  'application/json',
+                Content         =>  ''
+            );
+
+            my $ua = LWP::UserAgent->new();
+            my $res = $ua->request($request);
+
+            my $return;
+            my $return_code = $res->code;
+            if ($return_code == 200) {
+                my $content = decode_json($res->content());
+                $return = $content->{ehr_id}->{value};
+            }
+            elsif ($return_code == 404)   {
+                $return = undef;
+            }
+            else {
+                warn "non captured response: $req_url ($return_code)";
+            }
+
+            $return ? uc($return) : undef
+        };
+
+        # Adjust the base profile to add the correct name
+        my $create_ehr_body_clone = dclone($create_ehr_body);
+        $create_ehr_body_clone->{name}->{value}
+            =   $patient->{resource}->{name};
+        $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
+            =   $patient->{resource}->{nhsnumber};
+
+        # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+        $patient->{_uuid} = do {
+            my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$name_uuid";
+
+            if (!defined $patient_exist) {
+                my $request = PUT(
+                    $req_url,
+                    'Accept'        =>  'application/json',
+                    'Content-Type'  =>  'application/json',
+                    Content         =>  encode_json($create_ehr_body_clone)
+                );
+
+                my $ua = LWP::UserAgent->new();
+                my $res = $ua->request($request);
+
+                if ($res->code != 204)  {
+                    die "Failure creating patient!";
+                }
+
+                my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+                $patient_exist = uc($uuid_extract)
+            }
+
+            say "Patient " 
+                . $patient_exist
+                . ' linked with: '
+                . $patient->{resource}->{nhsnumber}
+                . ' '
+                . $patient->{resource}->{name};
+
+            $patient_exist
+        };
+
+        # Convert Date of birth to digitally calculable date
+        my ($dob_year,$dob_month,$dob_day) = 
+            split(/\-/,$patient->{resource}->{'birthDate'});
+
+        $patient->{resource}->{'birthDateAsString'} =
+            join('-',$dob_year,$dob_month,$dob_day);
+
+        $patient->{resource}->{'birthDate'} =
+            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
+
+        push @commit_list,$patient;
+    }
+
+    foreach my $customer (@commit_list) {
+        my $name        =   $customer->{resource}->{name};
+        my $identifier  =   uc($customer->{_uuid});
+
+        # Refactor the structure of the datasource, this would be a 
+        # call to a specialist service in DITO Service_Client_UserDB
+        my $datablock = {
+            'name'              =>  $name,
+            'id'                =>  $identifier,
+            'birthDate'         =>  $customer->{resource}->{'birthDate'},
+            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
+            'name_search'       =>  $customer->{resource}->{'name_search'},
+            'gender'            =>  $customer->{resource}->{'gender'},
+            'identifier'        =>  $customer->{resource}->{'identifier'},
+            'location'          =>  'Bedroom',
+            'assessment'        =>  $customer->{assessment},
+            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
+        };
+
+        $global->{patient_db}->{$identifier} = $datablock;
+        $global->{uuids}->{$identifier} = $customer;
+    }
+};
+
+my $send_template       =   sub {
+    my $template = shift;
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+
+    my $request = POST(
+        $req_url,
+        'Accept'        => 'application/xml',
+        'Content-Type'  => 'application/xml',
+        'Prefer'        => 'return=minimal',
+        Content         =>  $template
+    );
+
+    my $ua = LWP::UserAgent->new();
+    my $res = $ua->request($request);
+
+    return $res->code();
+};
+# my $sync_ehrid          =   sub($nhs = 0) {
+#     my $patient_exist   =   {
+#         my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr"
+#         .   "?subject_id=$nhs"
+#         .   "&subject_namespace=nhs_number";
+
+#         my $request = GET(
+#             $req_url,
+#             'Accept'        =>  'application/json',
+#             'Content-Type'  =>  'application/json',
+#             Content         =>  ''
+#         );
+
+#         my $ua = LWP::UserAgent->new();
+#         my $res = $ua->request($request);
+
+#         my $return;
+#         my $return_code = $res->code;
+#         if ($return_code == 200) {
+#             my $content = decode_json($res->content());
+#             $return = $content->{ehr_id}->{value};
+#         }
+#         elsif ($return_code == 404)   {
+#             $return = undef;
+#         }
+#         else {
+#             warn "non captured response: $req_url ($return_code)";
+#         }
+
+#         $return ? uc($return) : undef
+#     };
+
+#     # Adjust the base profile to add the correct name
+#     my $create_ehr_body_clone = dclone($create_ehr_body);
+#     $create_ehr_body_clone->{name}->{value}
+#         =   $patient->{resource}->{name};
+#     $create_ehr_body_clone->{subject}->{external_ref}->{id}->{value}
+#         =   $patient->{resource}->{nhsnumber};
+
+#     # my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr";
+
+#     $patient->{_uuid} = do {
+#         my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$name_uuid";
+
+#         if (!defined $patient_exist) {
+#             my $request = PUT(
+#                 $req_url,
+#                 'Accept'        =>  'application/json',
+#                 'Content-Type'  =>  'application/json',
+#                 Content         =>  encode_json($create_ehr_body_clone)
+#             );
+
+#             my $ua = LWP::UserAgent->new();
+#             my $res = $ua->request($request);
+
+#             if ($res->code != 204)  {
+#                 die "Failure creating patient!";
+#             }
+
+#             my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+#             $patient_exist = uc($uuid_extract)
+#         }
+# }
+
+while (my $query = $ehrclient->con_test()) {
     if ($query->{code} == 200) {
         my $template_list = decode_json($query->{content});
         if (scalar(@{$template_list}) > 0) {
@@ -172,13 +389,13 @@ while (my $query = $connect_test->()) {
             say STDERR "Critical error uploading template!";
             die;
         }
+        # Load the old patient DB
+        $load_patients->();
     }
     elsif ($query->{code} == 500) {
         sleep 5;
     }
 }
-
-say STDERR Dumper($dbh->return_col('uuid'));
 
 my $www_interface   =   POE::Component::Server::SimpleHTTP->new(
     'ALIAS'         =>      'HTTPD',
@@ -778,7 +995,10 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $search_result   =   [];
             my $search_db       =   $global->{patient_db};
 
-            foreach my $userid (keys %{$search_db}) {
+            foreach my $uuid_return ($dbh->return_col('uuid')) {
+                my $userid  =
+                    $uuid_return->[0];
+
                 # Filter section
                 if ($search_spec->{filter}->{enabled} == 1) {
                     my $search_key      =
@@ -1582,6 +1802,8 @@ sub compose_assessments($patient_uuid, @extra) {
         }
     }
 
+    # Why write stuff like this >.> it could be made so much clearer just 
+    # taking up a tiny bit more vertical height.... (comment by pgw)
     $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis news2/;
 
     return $composed;
@@ -1765,6 +1987,7 @@ sub make_up_score {
 
 
 
+
 package DBHelper;
 
 # Internal perl modules (core)
@@ -1782,15 +2005,8 @@ use Data::Dumper;
 # We need SQLite as well
 use DBI;
 
-# Version of this software
-my $debug = 0;
-
 # Primary code block
-sub new {
-    my ($class,$set_debug) = @_;
-
-    if ($set_debug) { $debug = 1 }
-
+sub new($class,$set_debug = 0) {
     my $dbh = DBI->connect(
         'dbi:SQLite:dbname=patient.db',
         '',
@@ -1803,17 +2019,22 @@ sub new {
     );
 
     my $self = bless {
-        'dbh'   =>  $dbh
+        'dbh'   =>  $dbh,
+        'debug' =>  $set_debug
     }, $class;
 
     # Double check the table exists and has content
-    my $create_table = $self->check_table_exist('patient');
-    if ($debug) { say STDERR "Create table: $create_table" }
-    if (($create_table == 0) || ($self->row_count() == 0)) {
+    my $create_table    =   $self->check_table_exist('patient');
+    my $row_count       =   $self->row_count();
+    if ($self->{debug}) {
+        say STDERR "Create table: $create_table"
+    }
+    if (($create_table == 0) || ($row_count == 0)) {
         $self->init_data($create_table);
     }
-
-    if ($debug) { say STDERR "Row count is now: ".$self->row_count() }
+    if ($self->{debug}) { 
+        say STDERR "Row count is now: $row_count";
+    }
 
     return $self;
 }
@@ -1832,7 +2053,7 @@ sub init_data($self,$create_table) {
 }
 
 sub check_table_exist($self,$tablename) {
-    my $sth = $self->{dbh}->prepare("SELECT count(name) FROM sqlite_master WHERE type='table' AND name=?");
+    my $sth = $self->{dbh}->prepare("SELECT count('name') FROM sqlite_master WHERE type='table' AND name=?");
     $sth->execute($tablename);
     my $row = $sth->fetch;
     return $row->[0] ? 1 : 0;
@@ -1845,17 +2066,68 @@ sub row_count($self) {
     return ($row->[0] + 0);
 }
 
-sub return_fields($self,@col_names) {
-    my $placeholders    =   join(',',map { $_ = "?" } @col_names);
-    my $sth             =   $self->{dbh}->prepare("SELECT $placeholders FROM patient LIMIT 1");
-    $sth->execute(@col_names);
-    my $row = $sth->fetch;
-    return $row;
+sub return_col($self,$col_name) {
+    my $sql_str =   "SELECT $col_name FROM patient";
+    my $sth     =   $self->{dbh}->prepare($sql_str);
+    $sth->execute();
+    return $sth->fetchall_arrayref;
 }
 
-sub return_col($self,$col_name) {
-    my $sth     =   $self->{dbh}->prepare('SELECT ? FROM patient');
-    $sth->execute($col_name);
-    my @rows    =   $sth->fetchall_arrayref;
-    return \@rows;
+
+
+
+
+package EHRHelper;
+
+# Internal perl modules (core)
+use strict;
+use warnings;
+
+# Internal perl modules (core,recommended)
+use utf8;
+use experimental qw(signatures);
+
+# Debug/Reporting modules
+use Carp qw(cluck longmess shortmess);
+use Data::Dumper;
+
+# Add in the HTTP modules, not mojo :)
+use URI;
+use URI::QueryParam;
+use HTTP::Request;
+use HTTP::Request::Common;
+use HTTP::Status;
+use HTTP::Cookies;
+use LWP::UserAgent;
+
+# Primary code block
+sub new($class,$set_debug = 0,$ehrbase = 'http://localhost:8080') {
+    my $debug = 0;
+    if ($set_debug) { $debug = 1 }
+
+    my $self = bless {
+        agent   =>  LWP::UserAgent->new(),
+        ehrbase =>  $ehrbase,
+        debug   =>  $debug
+    }, $class;
+
+    return $self;
+}
+
+sub con_test($self) {
+    my $ehrbase =   $self->{ehrbase};
+    my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+
+    my $request =   GET(
+        $req_url,
+        'Accept' => 'application/json',
+        'Prefer' => 'return=minimal'
+    );
+
+    my $ua  =   $self->{agent};
+    my $res =   $ua->request($request);
+
+    warn $res->code();
+
+    return  {code=>$res->code(),content=>$res->content()};
 }
