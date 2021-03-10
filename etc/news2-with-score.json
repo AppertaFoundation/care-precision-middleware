@@ -1,7 +1,7 @@
 {
   "header": {
     "start_time": "2021-02-10T13:34:58.446Z",
-    "uuid": "60FBE8A6-7EDD-4FF0-93D6-A73F7F282862",
+    "uuid": "5F7C7670-419B-40E6-9596-AC39D670BF15",
     "healthcare_facility": "Glen Carse Care Home",
     "composer": {
       "name": "RN Joyce Brown",
@@ -71,7 +71,6 @@
             },
             "clinical_risk_category": {
                 "code": "at0059",
-                "terminology": "local",
                 "value": "Medium"
             },
             "consciousness": {
