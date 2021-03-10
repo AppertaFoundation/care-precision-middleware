@@ -527,9 +527,12 @@ my $handler__cdr = POE::Session->create(
             $composition_obj->{output}  =   $xml_transformation->($composition_obj);
 
             # Write to /tmp for a log
-            my $comp_path = '/tmp/'.time.".log";
-            say STDERR "Composition raw dump: $comp_path";
-            path($comp_path)->spew($composition_obj->{output});
+            if ($ENV{DEBUG}) {
+                my ($fh, $fn) = tempfile;
+                binmode $fh, ':utf8';
+                print $fh $composition_obj->{output};
+                say STDERR "Composition XML is in $fn";
+            }
 
             my $ua = Mojo::UserAgent->new;
 
@@ -1233,11 +1236,7 @@ sub get_compositions($patient_uuid) {
     my @assessments;
     foreach my $composition (@{$composition_objs}) {
         my $xml_string = $retrieve_composition->($patient_uuid,$composition->[0]);
-        my ($fh, $fn) = tempfile;
-        binmode $fh, ':utf8';
-        say STDERR $fn;
         my $xml = Mojo::DOM->with_roles('+PrettyPrinter')->new($xml_string);
-        print $fh $xml->to_pretty_string;
 
         my $news2_node = $get_node_with_name->($xml, 'NEWS2');
 
