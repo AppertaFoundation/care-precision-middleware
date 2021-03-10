@@ -95,7 +95,50 @@ my $global      = {
         'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
         'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
     },
-    uuids       =>  {}
+    uuids       =>  {},
+    clinical_risk   =>  [
+        {
+            'localizedDescriptions' => {
+                'en' => 'Ward-based response.'
+            },
+            'value' => 'at0057',
+            'label' => 'Low',
+            'localizedLabels' => {
+                'en' => 'Low'
+            }
+        },
+        {
+            'localizedLabels' => {
+                'en' => 'Low-medium'
+            },
+            'label' => 'Low-medium',
+            'value' => 'at0058',
+            'localizedDescriptions' => {
+                'en' => 'Urgent ward-based response.'
+            }
+        },
+        {
+            'localizedDescriptions' => {
+                'en' => 'Key threshold for urgent response.'
+            },
+            'value' => 'at0059',
+            'label' => 'Medium',
+            'localizedLabels' => {
+                'en' => 'Medium'
+            }
+        },
+        {
+            'value' => 'at0060',
+
+            'localizedDescriptions' => {
+                'en' => 'Urgent or emergency response.'
+            },
+            'localizedLabels' => {
+                'en' => 'High'
+            },
+            'label' => 'High'
+        }
+    ]
 };
 
 # The old patient DB to not break functionality
@@ -481,7 +524,7 @@ my $handler__cdr_draft = POE::Session->create(
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
 
-                $assessment = make_up_score( $assessment );
+                $assessment = fill_in_scores( $assessment );
                 my $summarised = summarise_composed_assessment( compose_assessments ( $patient_uuid, $assessment ) );
 
                 $summarised->{situation}  = $patient->{situation};
@@ -1695,68 +1738,24 @@ sub summarise_composed_assessment {
 
     if ($composed->{denwis}) {
         $summary->{denwis}->{value} = {
-            value     =>  $composed->{denwis}->{total_score},
-            trend     =>  $composed->{denwis}->{trend},
+            value       =>  $composed->{denwis}->{total_score},
+            trend       =>  $composed->{denwis}->{trend},
         }
     }
 
     if ($composed->{sepsis}) {
         $summary->{sepsis}->{value} = {
-            value     =>  $composed->{sepsis}->{value},
+            value       =>  $composed->{sepsis}->{value},
+            score       =>  $composed->{news2}->{score}
         }
     }
 
     if ($composed->{news2}) {
         $summary->{news2}   =   do {
-            # Just pick one of these at random
-            my @clinical_risk = (
-                {
-                    'localizedDescriptions' => {
-                        'en' => 'Ward-based response.'
-                    },
-                    'value' => 'at0057',
-                    'label' => 'Low',
-                    'localizedLabels' => {
-                        'en' => 'Low'
-                    }
-                },
-                {
-                    'localizedLabels' => {
-                        'en' => 'Low-medium'
-                    },
-                    'label' => 'Low-medium',
-                    'value' => 'at0058',
-                    'localizedDescriptions' => {
-                        'en' => 'Urgent ward-based response.'
-                    }
-                },
-                {
-                    'localizedDescriptions' => {
-                        'en' => 'Key threshold for urgent response.'
-                    },
-                    'value' => 'at0059',
-                    'label' => 'Medium',
-                    'localizedLabels' => {
-                        'en' => 'Medium'
-                    }
-                },
-                {
-                    'value' => 'at0060',
-
-                    'localizedDescriptions' => {
-                        'en' => 'Urgent or emergency response.'
-                    },
-                    'localizedLabels' => {
-                        'en' => 'High'
-                    },
-                    'label' => 'High'
-                }
-            );
-
             {
-                score        => $composed->{news2}->{score},
-                trend        => $composed->{news2}->{trend},
-                clinicalRisk => $clinical_risk[rand @clinical_risk],
+                clinicalRisk    =>  $composed->{news2}->{clinicalRisk},
+                score           =>  $composed->{news2}->{score},
+                trend           =>  $composed->{news2}->{trend},
             };
         };
     }
@@ -1782,7 +1781,7 @@ sub summarise_composed_assessment {
     return $summary;
 }
 
-sub make_up_score {
+sub fill_in_scores {
     # just adds total_scores or whatever to the assessment
     my $assessment = shift;
 
@@ -1804,7 +1803,7 @@ sub make_up_score {
             'air_or_oxygen'             =>  defined($assessment->{news2}->{inspired_oxygen}->{flow_rate}) ? 'Oxygen' : 'Air',
             'consciousness'             =>  do {
                 my $return_value;
-                my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? $assessment->{news2}->{acvpu}->{value} : '';
+                my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? $assessment->{news2}->{acvpu}->{value} : undef;
                 if      ($submitted_value =~ m/^Confused|Voice|Pain|Unresponsive|CVPU$/i)   { $return_value = 'CVPU' }
                 elsif   ($submitted_value =~ m/^Alert$/i)                                   { $return_value = 'Alert' }
                 $return_value
@@ -1851,7 +1850,34 @@ sub make_up_score {
             "total_score" => $news2_scoring->{state}->{score}
         };
 
-    }
+        # Add in clinical risk
+        $assessment->{news2}->{clinicalRisk} = do {
+            my $news2_score = $news2_scoring->{state}->{score};
+            my $risk_selected;
+
+            if ($news2_score >= 0 && $news2_score <= 4) {
+                $risk_selected = 0
+            }
+            elsif ($news2_score >= 5 && $news2_score <= 6) {
+                $risk_selected = 2
+            }
+            elsif ($news2_score >= 7) {
+                $risk_selected = 3
+            }
+            else {
+                foreach my $observation_set ( keys %{ $assessment->{news2}->{score} } ) {
+                    if (
+                        defined($observation_set->{ordinal})
+                        && $observation_set->{ordinal} >= 3
+                    )   { 
+                        $risk_selected = 2;
+                    }
+                }
+            }
+            defined($risk_selected) ? $global->{clinical_risk}->[$risk_selected] : undef
+        };
+
+    };
 
     if ($assessment->{covid}) {
         # no idea
