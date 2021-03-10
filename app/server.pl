@@ -1806,10 +1806,9 @@ sub make_up_score {
             'air_or_oxygen'             =>  defined($assessment->{news2}->{inspired_oxygen}->{flow_rate}) ? 'Oxygen' : 'Air',
             'consciousness'             =>  do {
                 my $return_value;
-                my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? 
-                                        $assessment->{news2}->{acvpu}->{value} : 'Alert';
-                if      ($submitted_value =~ m/^Confused|Voice|Pain|Unresponsive$/) { $return_value = 'CVPU' }
-                else                                                                { $return_value = 'Alert' }
+                my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? $assessment->{news2}->{acvpu}->{value} : '';
+                if      ($submitted_value =~ m/^Confused|Voice|Pain|Unresponsive|CVPU$/i)   { $return_value = 'CVPU' }
+                elsif   ($submitted_value =~ m/^Alert$/i)                                   { $return_value = 'Alert' }
                 $return_value
             }
         });
@@ -1817,37 +1816,37 @@ sub make_up_score {
         # I need to fill in this with the real results:
         $assessment->{news2}->{score} = {
             "respiration_rate" => {
-              "code"    => "at0020",
+              "code"    => $news2_scoring->{news2}->{respiration_rate}->[2],
               "value"   => $news2_scoring->{news2}->{respiration_rate}->[1],
               "ordinal" => $news2_scoring->{news2}->{respiration_rate}->[0]
             },
             "spo_scale_1" => {
-              "code"    => "at0031",
+              "code"    => $news2_scoring->{news2}->{spo2_scale_1}->[2],
               "value"   => $news2_scoring->{news2}->{spo2_scale_1}->[1],
               "ordinal" => $news2_scoring->{news2}->{spo2_scale_1}->[0]
             },
             "air_or_oxygen" => {
-              "code"    => "at0036",
+              "code"    => $news2_scoring->{news2}->{air_or_oxygen}->[2],
               "value"   => $news2_scoring->{news2}->{air_or_oxygen}->[1],
               "ordinal" => $news2_scoring->{news2}->{air_or_oxygen}->[0]
             },
             "systolic_blood_pressure" => {
-              "code"    => "at0017",
+              "code"    => $news2_scoring->{news2}->{systolic_blood_pressure}->[2],
               "value"   => $news2_scoring->{news2}->{systolic_blood_pressure}->[1],
               "ordinal" => $news2_scoring->{news2}->{systolic_blood_pressure}->[0]
             },
             "pulse" => {
-              "code"    => "at0013",
+              "code"    => $news2_scoring->{news2}->{pulse}->[2],
               "value"   => $news2_scoring->{news2}->{pulse}->[1],
               "ordinal" => $news2_scoring->{news2}->{pulse}->[0]
             },
             "consciousness" => {
-              "code"    => "at0024",
+              "code"    => $news2_scoring->{news2}->{consciousness}->[2],
               "value"   => $news2_scoring->{news2}->{consciousness}->[1],
               "ordinal" => $news2_scoring->{news2}->{consciousness}->[0]
             },
             "temperature" => {
-              "code"    => "at0023",
+              "code"    => $news2_scoring->{news2}->{temperature}->[2],
               "value"   => $news2_scoring->{news2}->{temperature}->[1],
               "ordinal" => $news2_scoring->{news2}->{temperature}->[0]
             },
