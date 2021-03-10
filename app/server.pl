@@ -866,7 +866,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             my $search_result   =   [];
             my $search_db       =   $global->{patient_db};
 
-            foreach my $uuid_return ($dbh->return_col('uuid')->[0]) {
+            foreach my $uuid_return ( @{ $dbh->return_col('uuid') }) {
                 my $userid  =
                     $uuid_return->[0];
 
