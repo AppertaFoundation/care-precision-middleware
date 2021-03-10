@@ -366,15 +366,8 @@ my $handler__cdr_draft = POE::Session->create(
             my $patient_uuid    =
                 $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
 
-            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
-            say STDERR Dumper($assessment);
-            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
-
-            if (defined $patient_uuid && $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
-                my $patient = my $search_db_ref   =   $dbh->return_row(
-                    'uuid',
-                    $patient_uuid
-                );
+            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
+                my $patient = $global->{uuids}->{$patient_uuid};
 
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
@@ -495,10 +488,6 @@ my $handler__cdr = POE::Session->create(
             # We have a valid templateid request lets proceed with creating a composition!
             my $patient_uuid = $passed_objects->{header}->{uuid} ? uc($passed_objects->{header}->{uuid}) : undef;
 
-            # If the patient uuid is invalid, return error
-            say STDERR "-"x10 . " Assessment(/cdr) Dump begin " . "-"x10;
-            say STDERR Dumper($passed_objects);
-            say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
 
             if (!defined $patient_uuid || !$dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
                 my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
