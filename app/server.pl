@@ -41,7 +41,7 @@ use Mojo::DOM;
 
 use File::Temp qw/tempfile/;
 use Mojo::UserAgent;
-use LWP::UserAgent;
+use LWP::UserAgent(keep_alive => 1);
 use HTTP::Request;
 
 use OpusVL::ACME::C19;
