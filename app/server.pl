@@ -1607,30 +1607,30 @@ sub get_compositions($patient_uuid) {
 
             push @assessments, {
                 news2 => {
-                    respirations => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
+                    'respirations' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
                     },
-                    spo2 => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
-                    systolic => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
+                    'spo2' => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
+                    'systolic' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
                     },
-                    diastolic => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
+                    'diastolic' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
                     },
-                    pulse => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
+                    'pulse' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
                     },
-                    acvpu => {
-                        code => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value code_string'),
-                        value => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value > value'),
+                    'acvpu' => {
+                        'code' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value code_string'),
+                        'value' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value > value'),
                     },
-                    temperature => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
+                    'temperature' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
                     },
-                    inspired_oxygen => {
-                        method_of_oxygen_delivery => $news2_node->$dig_into_xml_for({ name => "Method of oxygen delivery" }, 'value value'),
-                        flow_rate => {
-                            magnitude => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
+                    'inspired_oxygen' => {
+                        'method_of_oxygen_delivery' => $news2_node->$dig_into_xml_for({ name => "Method of oxygen delivery" }, 'value value'),
+                        'flow_rate' => {
+                            'magnitude' => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
                         }
                     },
                     'score' => {
