@@ -40,7 +40,6 @@ RUN chmod +x /dumb-init
 
 # FIXME, server.pl expects patients.json in PWD
 RUN ln -s /opt/C19/full-template.xml /full-template.xml
-RUN ln -s /opt/C19/patients.json /patients.json
 
 WORKDIR /opt/C19
 
