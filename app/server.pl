@@ -184,25 +184,7 @@ foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
 
     my $patient_name        =   $patient->{'name'};
     my $patient_nhsnumber   =   $patient->{'nhsnumber'};
-
-    # OLD DB Compat
-    if (print STDERR "Deprecated DB Compat in use, at line: ".__LINE__."\n") {
-        my $datablock = {
-            'name'              =>  $patient_name,
-            'id'                =>  $patient_ehrid,
-            'birthDate'         =>  $patient->{'birth_date'},
-            'birthDateAsString' =>  $patient->{'birth_date_string'},
-            'name_search'       =>  $patient->{'name_search'},
-            'gender'            =>  $patient->{'gender'},
-            'identifier'        =>  $patient_ehrid,
-            'location'          =>  $patient->{'location'},
-            'nhsnumber'         =>  $patient_nhsnumber
-        };
-
-        $global->{uuids}->{$patient_ehrid}->{resource}  =   $datablock;
-    }
-
-    my $res = $ehrclient->check_ehr_exists($patient_nhsnumber);
+    my $res                 =   $ehrclient->check_ehr_exists($patient_nhsnumber);
 
     if ($res->{code} != 200) {
         my $create_record = $ehrclient->create_ehr(
