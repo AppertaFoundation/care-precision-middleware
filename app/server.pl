@@ -431,8 +431,11 @@ my $handler__cdr_draft = POE::Session->create(
             say STDERR Dumper($assessment);
             say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
 
-            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
-                my $patient = $global->{uuids}->{$patient_uuid};
+            if (defined $patient_uuid && $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
+                my $patient = my $search_db_ref   =   $dbh->return_row(
+                    'uuid',
+                    $patient_uuid
+                );
 
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
@@ -448,10 +451,7 @@ my $handler__cdr_draft = POE::Session->create(
                 $packet->{response}->content(encode_json($summarised));
             }
             else {
-                print STDERR "Refusing to process draft call ";
-                if (!defined $patient_uuid) { print STDERR "patient uuid not defined!\n" }
-                elsif (!defined $global->{uuids}->{$patient_uuid}) { print STDERR "uuid: $patient_uuid is not valid!\n" }
-                else { print STDERR "an unknown exception was encountered!\n" }
+                print STDERR "Refusing to process draft call, error with uuid validation.";
             }
 
             $kernel->yield('finalize', $packet->{response});
@@ -561,7 +561,7 @@ my $handler__cdr = POE::Session->create(
             say STDERR Dumper($passed_objects);
             say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
 
-            if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+            if (!defined $patient_uuid || !$dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
                 my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
                 if (!defined $patient_uuid) { $error_str = "A UUID was not found to be defined in the header"; }
                 else { $error_str = "Supplied UUID($patient_uuid) was not present in local ehr db"; }
@@ -1720,7 +1720,7 @@ sub return_single_cell($self,$col_name,$col_value,$target_col_name) {
     my $sth     =   $self->{dbh}->prepare($sql_str);
     $sth->execute($col_value);
     my $sql_return = $sth->fetch;
-    return $sql_return->[0];
+    return $sql_return->[0] ? $sql_return->[0] : undef;
 }
 
 sub return_row($self,$col_name,$col_value) {
