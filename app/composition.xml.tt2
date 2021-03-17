@@ -148,7 +148,6 @@
                         </events>
                     </data>
                 </items>
-                <!-- FIXME not sure what part of the JSON goes in here -->
                 <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.pulse_oximetry.v1">
                     <name>
                         <value>Pulse oximetry</value>
@@ -356,7 +355,6 @@
                                     <name>
                                         <value>Rate</value>
                                     </name>
-                                    <!-- FIXME: respirations is just a single value in JSON -->
                                     <value xsi:type="DV_QUANTITY">
                                         <magnitude>[% json_path('/assessment/news2/respirations/magnitude') %]</magnitude>
                                         <units>/min</units>
