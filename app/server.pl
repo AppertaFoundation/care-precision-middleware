@@ -41,7 +41,7 @@ use Mojo::DOM;
 
 use File::Temp qw/tempfile/;
 use Mojo::UserAgent;
-use LWP::UserAgent;
+use LWP::UserAgent(keep_alive => 1);
 use HTTP::Request;
 
 use OpusVL::ACME::C19;
@@ -95,155 +95,6 @@ my $global      = {
         'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
         'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
     },
-    uuids       =>  {},
-    clinical_risk   =>  [
-        {
-            'localizedDescriptions' => {
-                'en' => 'Ward-based response.'
-            },
-            'value' => 'at0057',
-            'label' => 'Low',
-            'localizedLabels' => {
-                'en' => 'Low'
-            }
-        },
-        {
-            'localizedLabels' => {
-                'en' => 'Low-medium'
-            },
-            'label' => 'Low-medium',
-            'value' => 'at0058',
-            'localizedDescriptions' => {
-                'en' => 'Urgent ward-based response.'
-            }
-        },
-        {
-            'localizedDescriptions' => {
-                'en' => 'Key threshold for urgent response.'
-            },
-            'value' => 'at0059',
-            'label' => 'Medium',
-            'localizedLabels' => {
-                'en' => 'Medium'
-            }
-        },
-        {
-            'value' => 'at0060',
-
-            'localizedDescriptions' => {
-                'en' => 'Urgent or emergency response.'
-            },
-            'localizedLabels' => {
-                'en' => 'High'
-            },
-            'label' => 'High'
-        }
-    ]
-};
-
-# The old patient DB to not break functionality
-if (1) {
-    my $datetime = DateTime->now;
-    my $patient_list = decode_json(path('patients.json')->slurp);
-
-    my @commit_list;
-
-    # Simplify names, add assessments and digitize date of birth
-    foreach my $patient (@{$patient_list->{entry}}) {
-        $patient->{_compositions} = [];
-
-        my $name_res    =   $patient->{resource}->{name};
-        my $name_uuid   =   $patient->{resource}->{uuid};
-        my $name_use    =   [];
-        my $name_only;
-
-        foreach my $oldname (@{$name_res})  {
-            my $new_name = [
-                $oldname->{prefix}->[0] || '',
-                $oldname->{given}->[0] || '',
-                $oldname->{family} || ''
-            ];
-
-            if ($oldname->{use} && $oldname->{use} eq 'official') {
-                $name_use = $new_name;
-                $name_only = join(' ',
-                    $oldname->{given}->[0] || '',
-                    $oldname->{family} || ''
-                );
-            }
-            else {
-                push @{$patient->{resource}->{name_other}},$new_name;
-            }
-        }
-
-        # Add a name without its prefix
-        $patient->{resource}->{name_search} = $name_only;
-        # Add the full name as the first name_other
-        push @{$patient->{resource}->{name_other}},$name_use;
-        # Overwrite the old style name with a normal one
-        $patient->{resource}->{name} = join(' ',@{$name_use});
-
-        # Move the nhs-number to make it easier to search
-        $patient->{resource}->{nhsnumber}   = do {
-            my $return;
-            foreach my $id (@{$patient->{resource}->{identifier}}) {
-                if (
-                    defined $id->{'system'} 
-                    && $id->{'system'} eq 'https://fhir.nhs.uk/Id/nhs-number'
-                )  {
-                    $return = $id->{'value'};
-                }
-            }
-            $return
-        };
-
-        # If there is no nhs number we do not want it
-        if (!$patient->{resource}->{nhsnumber}) {
-            next;
-        }
-
-        # Convert Date of birth to digitally calculable date
-        my ($dob_year,$dob_month,$dob_day) = 
-            split(/\-/,$patient->{resource}->{'birthDate'});
-
-        $patient->{resource}->{'birthDateAsString'} =
-            join('-',$dob_year,$dob_month,$dob_day);
-
-        $patient->{resource}->{'birthDate'} =
-            join('',$dob_year,sprintf('%02d',$dob_month),sprintf('%02d',$dob_day));
-
-        # Legacy
-        $patient->{_uuid} = $dbh->return_single_cell(
-            'nhsnumber',
-            $patient->{resource}->{nhsnumber},
-            'uuid'
-        );
-
-        push @commit_list,$patient;
-    }
-
-    foreach my $customer (@commit_list) {
-        my $name        =   $customer->{resource}->{name};
-        my $identifier  =   uc($customer->{_uuid});
-
-        # Refactor the structure of the datasource, this would be a 
-        # call to a specialist service in DITO Service_Client_UserDB
-        my $datablock = {
-            'name'              =>  $name,
-            'id'                =>  $identifier,
-            'birthDate'         =>  $customer->{resource}->{'birthDate'},
-            'birthDateAsString' =>  $customer->{resource}->{'birthDateAsString'},
-            'name_search'       =>  $customer->{resource}->{'name_search'},
-            'gender'            =>  $customer->{resource}->{'gender'},
-            'identifier'        =>  $customer->{resource}->{'identifier'},
-            'location'          =>  'Bedroom',
-            'assessment'        =>  $customer->{assessment},
-            'nhsnumber'         =>  $customer->{resource}->{'nhsnumber'}
-        };
-
-        $global->{patient_db}->{$identifier} = $datablock;
-        $global->{uuids}->{$identifier} = $customer;
-    }
 };
 
 # Make sure ehrbase has its base template
@@ -277,19 +128,20 @@ while (my $query = $ehrclient->con_test()) {
 foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
     my $patient_ehrid   =   $patient_ehrid_raw->[0];
 
-    my $patient_name = $dbh->return_single_cell(
+    my $patient = $dbh->return_row(
         'uuid',
-        $patient_ehrid,
-        'name'
+        $patient_ehrid
     );
 
-    my $patient_nhsnumber = $dbh->return_single_cell(
-        'uuid',
-        $patient_ehrid,
-        'nhsnumber'
-    );
+    foreach my $validation_check_key (qw(name birth_date birth_date_string name_search gender location nhsnumber)) {
+        if (!defined($patient->{$validation_check_key})) {
+            say STDERR "WARNING: $patient_ehrid has NULL $validation_check_key";
+        }
+    }
 
-    my $res             =   $ehrclient->check_ehr_exists($patient_nhsnumber);
+    my $patient_name        =   $patient->{'name'};
+    my $patient_nhsnumber   =   $patient->{'nhsnumber'};
+    my $res                 =   $ehrclient->check_ehr_exists($patient_nhsnumber);
 
     if ($res->{code} != 200) {
         my $create_record = $ehrclient->create_ehr(
@@ -518,8 +370,11 @@ my $handler__cdr_draft = POE::Session->create(
             say STDERR Dumper($assessment);
             say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
 
-            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
-                my $patient = $global->{uuids}->{$patient_uuid};
+            if (defined $patient_uuid && $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
+                my $patient = my $search_db_ref   =   $dbh->return_row(
+                    'uuid',
+                    $patient_uuid
+                );
 
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
@@ -535,10 +390,7 @@ my $handler__cdr_draft = POE::Session->create(
                 $packet->{response}->content(encode_json($summarised));
             }
             else {
-                print STDERR "Refusing to process draft call ";
-                if (!defined $patient_uuid) { print STDERR "patient uuid not defined!\n" }
-                elsif (!defined $global->{uuids}->{$patient_uuid}) { print STDERR "uuid: $patient_uuid is not valid!\n" }
-                else { print STDERR "an unknown exception was encountered!\n" }
+                print STDERR "Refusing to process draft call, error with uuid validation.";
             }
 
             $kernel->yield('finalize', $packet->{response});
@@ -648,7 +500,7 @@ my $handler__cdr = POE::Session->create(
             say STDERR Dumper($passed_objects);
             say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
 
-            if (!defined $patient_uuid || !$global->{uuids}->{$patient_uuid}) {
+            if (!defined $patient_uuid || !$dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
                 my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
                 if (!defined $patient_uuid) { $error_str = "A UUID was not found to be defined in the header"; }
                 else { $error_str = "Supplied UUID($patient_uuid) was not present in local ehr db"; }
@@ -687,6 +539,7 @@ my $handler__cdr = POE::Session->create(
 
             # Write to /tmp for a log
             my $comp_path = '/tmp/'.time.".log";
+            say STDERR "Composition raw dump: $comp_path";
             path($comp_path)->spew($composition_obj->{output});
 
             my $ua = Mojo::UserAgent->new;
@@ -844,18 +697,6 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
             # Build a list of queries
             my $return_spec     =   {
-                filter_lte  => {
-                    key     => $params->{filter_key},
-                    value   => $params->{filter_max}
-                },
-                filter_gte  => {
-                    key     => $params->{filter_key},
-                    value   => $params->{filter_min}
-                },
-                filter      =>  {
-                    key     =>  $params->{'filter_key'},
-                    value   =>  $params->{'filter_value'}
-                },
                 search      =>  {
                     key     =>  $params->{'search_key'},
                     value   =>  $params->{'search_value'}
@@ -864,10 +705,6 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     key     =>  $params->{'sort_key'},
                     value   =>  $params->{'sort_value'}
                 },
-                pagination  =>  {
-                    key     =>  $params->{'pagination_key'},
-                    value   =>  $params->{'pagination_value'}
-                }
             };
 
             # Add in fast checks
@@ -895,7 +732,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
             );
 
             for (@$result) {
-                $_->{assessment} = summarise_composed_assessment( compose_assessments( $_->{id} ) )
+                $_->{assessment} = summarise_composed_assessment( compose_assessments( $_->{uuid} ) )
             }
 
             $response->content(encode_json($result));
@@ -907,240 +744,54 @@ my $handler__meta_demographics_patient = POE::Session->create(
                 @_[ KERNEL, HEAP, SESSION, ARG0 ];
 
             my $search_result   =   [];
-            my $search_db       =   $global->{patient_db};
 
-            foreach my $uuid_return ( @{ $dbh->return_col('uuid') }) {
-                my $userid  =
-                    $uuid_return->[0];
+            # Filter
 
-                # Filter section
-                if ($search_spec->{filter}->{enabled} == 1) {
-                    my $search_key      =
-                        $search_spec->{filter}->{key};
-                    my $search_value    =
-                        $search_spec->{filter}->{value};
+            # Sort
+            if ($search_spec->{sort}->{enabled}) {
+                foreach my $uuid_return ( @{ $dbh->return_col_sorted('uuid',$search_spec->{sort}) }) {
+                    my $userid  =
+                        $uuid_return->[0];
 
-                    my $search_db_ref   =
-                        $search_db->{$userid}->{'assessment'};
+                    my $search_db_ref   =   $dbh->return_row(
+                        'uuid',
+                        $userid
+                    );
 
-                    if (
-                        !defined $search_db_ref->{$search_key}
-                        ||
-                        !defined $search_db_ref->{$search_key}->{value}
-                        ||
-                        ($search_db_ref->{"$search_key"}->{value} ne $search_value)
-                    ) {
-                        next;
-                    }
-                }
-
-                # Don't expect good results if you use a string field here
-                if ($search_spec->{filter_lte}->{enabled}) {
-                    my $search_key      =
-                        $search_spec->{filter_lte}->{key};
-                    my $search_value    =
-                        $search_spec->{filter_lte}->{value};
-
-                    my $search_db_ref   =
-                        $search_db->{$userid}->{assessment};
-
-                    if (
-                        !defined $search_db_ref->{$search_key}
-                        ||
-                        !defined $search_db_ref->{$search_key}->{value}
-                        ||
-                        ($search_db_ref->{"$search_key"}->{value} > $search_value)
-                    ) {
-                        next;
-                    }
-
-                }
-
-                if ($search_spec->{filter_gte}->{enabled}) {
-                    my $search_key      =
-                        $search_spec->{filter_gte}->{key};
-                    my $search_value    =
-                        $search_spec->{filter_gte}->{value};
-
-                    my $search_db_ref   =
-                        $search_db->{$userid}->{assessment};
-
-                    if (
-                        !defined $search_db_ref->{$search_key}
-                        ||
-                        !defined $search_db_ref->{$search_key}->{value}
-                        ||
-                        ($search_db_ref->{"$search_key"}->{value} < $search_value)
-                    ) {
-                        next;
-                    }
-
-                }
-
-                # Search section
-                if ($search_spec->{search}->{enabled} == 1) {
-                    my $search_key      =
-                        $search_spec->{search}->{key};
-                    my $search_value    =
-                        $search_spec->{search}->{value};
-
-                    my $search_db_ref   =
-                        $search_db->{$userid};
-
-                    if (
-                        $search_key eq 'combisearch'
-                    )
-                    {
-                        my $search_match = 0;
-
-                        if (
-                            defined $search_db_ref->{nhsnumber}
-                            &&
-                            $search_db_ref->{nhsnumber} =~ m/\Q$search_value\E/i
-                        )
-                        {
-                            $search_match = 1;
-                        }
-                        elsif (
-                            defined $search_db_ref->{name}
-                            &&
-                            $search_db_ref->{name} =~ m/\Q$search_value\E/i
-                        )
-                        {
-                            $search_match = 1;
-                        }
-                        elsif (
-                            defined $search_db_ref->{location}
-                            &&
-                            $search_db_ref->{location} =~ m/\Q$search_value\E/i
-                        )
-                        {
-                            $search_match = 1;
-                        }
-                        elsif (
-                            defined $search_db_ref->{gender}
-                            &&
-                            $search_db_ref->{gender} =~ m/\Q$search_value\E/i
-                        )
-                        {
-                            $search_match = 1;
-                        }
-                        elsif (
-                            defined $search_db_ref->{birthdate}
-                            &&
-                            $search_db_ref->{birthdate} =~ m/\Q$search_value\E/i
-                        )
-                        {
-                            $search_match = 1;
-                        }
-
-                        if ($search_match == 0) { 
-                            next; 
-                        }
-                    }
-                    elsif (
-                        !defined $search_db_ref->{"$search_key"}
-                        ||
-                        ($search_db_ref->{"$search_key"} !~ m/\Q$search_value\E/i)
-                    ) {
-                        next;
-                    }
-                }
-
-                push @{$search_result},$search_db->{$userid};
-            }
-
-            # Sort section
-            if ($search_spec->{sort}->{enabled} == 1) {
-                # key = sepsis/news2/name/birthdate
-                # value = ASC/DESC
-                if ($search_spec->{sort}->{key} eq 'birthdate') {
-                    if ($search_spec->{sort}->{value} =~ m/ASC/i) {
-                        @{$search_result} = reverse sort {
-                            $a->{birthDate} cmp $b->{birthDate}
-                        } @{$search_result}
-                    }
-                    else {
-                        @{$search_result} = sort {
-                            $a->{birthDate} cmp $b->{birthDate}
-                        } @{$search_result}
-                    }
-                }
-                elsif ($search_spec->{sort}->{key} eq 'name') {
-                    if ($search_spec->{sort}->{value} =~ m/DESC/i) {
-                        @{$search_result} = reverse sort {
-                            $a->{name_search} cmp $b->{name_search}
-                        } @{$search_result}
-                    }
-                    else {
-                        @{$search_result} = sort {
-                            $a->{name_search} cmp $b->{name_search}
-                        } @{$search_result}
-                    }
-                }
-                elsif ($search_spec->{sort}->{key} =~ m/^(news2|sepsis|denwis)$/i) {
-                    my $sort_key = $1;
-                    if (1==0) {
-                        if ($search_spec->{sort}->{value} =~ m/DESC/i) {
-                            @{$search_result} = reverse sort {
-                                $a->{$sort_key}->{value}->{value} cmp $b->{$sort_key}->{value}->{value}
-                            } @{$search_result}
-                        }
-                        else {
-                            @{$search_result} = sort {
-                                ($a->{$sort_key}->{value}->{value} // 0) cmp ($b->{$sort_key}->{value}->{value} // 0)
-                            } @{$search_result}
-                        }
-                    }
+                    push @{$search_result},$search_db_ref;
                 }
             }
 
-            # Pagination section
-            # It's faster to redo the search and just send back chunks of what to send back
-            # if we wanted to do this, we should just shove the details into the users
-            # session and slice sections out based on the value of the page wanted
-            if ($search_spec->{pagination}->{enabled} == 1) {
-                # key = page size
-                # value = page to show
+            # Search - should be restricted to what is already in search_result!
+            # at present will basically ignore sort and only return one item
+            if ($search_spec->{search}->{enabled} == 1) {
+                # Frontend sends id, when it should send uuid
+                my $search_key      =   'uuid';
+                if ($search_spec->{search}->{key} ne 'id')    {
+                    $search_key = $search_spec->{search}->{key};
+                }
+                my $search_value    =
+                    $search_spec->{search}->{value};
 
-                my $page_size       =   $search_spec->{pagination}->{key};
-                my $page_index      =   $search_spec->{pagination}->{value};
-                my $page_validated  =   1;
+                my $search_match = $dbh->search_match($search_key,$search_value);
 
-                if (
-                    $page_size !~ m/^\d+$/
-                    ||
-                    $page_size < 0
-                ) {
-                    $page_validated = 0;
-                }
-                elsif (
-                    $page_index !~ m/^\d+$/
-                    ||
-                    $page_size < 0
-                ) {
-                    $page_validated = 0;
-                }
+                if ($search_match) {
+                    my $search_db_ref   =   $dbh->return_row(
+                        'uuid',
+                        $search_match
+                    );
 
-                my @chunks;
-                if ($page_validated == 1) {
-                    while (my @nibble = splice(@{$search_result},0,$page_size)) {
-                        push @chunks,[@nibble];
-                    }
+                    push @{$search_result},$search_db_ref;
                 }
+            }
 
-                if (
-                    scalar(@chunks) >= $page_index
-                    &&
-                    scalar(@chunks) > 0
-                    &&
-                    defined $chunks[$page_index+1]
-                ) {
-                    return $chunks[$page_index+1];
-                }
-                else {
-                    return [];
-                }
+            if (scalar @{$search_result} > 0) {
+                say STDERR "Compatability function in use for birth_date, at line: ".__LINE__;
+                map { 
+                    $_->{birthDate} = $_->{birth_date}; 
+                    $_->{birthDateAsString} = $_->{birth_date_string};
+                    $_->{id} = $_->{uuid}
+                } @{$search_result};
             }
 
             # If no pagination just return whatever survived the run
@@ -1606,31 +1257,31 @@ sub get_compositions($patient_uuid) {
             $news2_score->remove;
 
             push @assessments, {
-                news2 => {
-                    respirations => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
+                'news2' => {
+                    'respirations' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
                     },
-                    spo2 => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
-                    systolic => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
+                    'spo2' => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
+                    'systolic' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
                     },
-                    diastolic => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
+                    'diastolic' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
                     },
-                    pulse => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
+                    'pulse' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
                     },
-                    acvpu => {
-                        code => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value code_string'),
-                        value => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value > value'),
+                    'acvpu' => {
+                        'code' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value code_string'),
+                        'value' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value > value'),
                     },
-                    temperature => {
-                        magnitude => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
+                    'temperature' => {
+                        'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
                     },
-                    inspired_oxygen => {
-                        method_of_oxygen_delivery => $news2_node->$dig_into_xml_for({ name => "Method of oxygen delivery" }, 'value value'),
-                        flow_rate => {
-                            magnitude => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
+                    'inspired_oxygen' => {
+                        'method_of_oxygen_delivery' => $news2_node->$dig_into_xml_for({ name => "Method of oxygen delivery" }, 'value value'),
+                        'flow_rate' => {
+                            'magnitude' => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
                         }
                     },
                     'score' => {
@@ -1753,7 +1404,7 @@ sub summarise_composed_assessment {
     if ($composed->{news2}) {
         $summary->{news2}   =   do {
             {
-                clinicalRisk    =>  $composed->{news2}->{clinicalRisk},
+                clinicalRisk    =>  $news2_calculator->calculate_clinical_risk($composed->{news2}),
                 score           =>  $composed->{news2}->{score},
                 trend           =>  $composed->{news2}->{trend},
             };
@@ -1804,7 +1455,7 @@ sub fill_in_scores {
             'consciousness'             =>  do {
                 my $return_value;
                 my $submitted_value =   defined($assessment->{news2}->{acvpu}->{value}) ? $assessment->{news2}->{acvpu}->{value} : undef;
-                if      ($submitted_value =~ m/^Confused|Voice|Pain|Unresponsive|CVPU$/i)   { $return_value = 'CVPU' }
+                if      ($submitted_value =~ m/^Confused|Confusion|Voice|Pain|Unresponsive|CVPU$/i)   { $return_value = 'CVPU' }
                 elsif   ($submitted_value =~ m/^Alert$/i)                                   { $return_value = 'Alert' }
                 $return_value
             }
@@ -1851,33 +1502,9 @@ sub fill_in_scores {
         };
 
         # Add in clinical risk
-        $assessment->{news2}->{clinicalRisk} = do {
-            my $news2_score = $news2_scoring->{state}->{score};
-            my $risk_selected;
-
-            if ($news2_score >= 0 && $news2_score <= 4) {
-                $risk_selected = 0
-            }
-            elsif ($news2_score >= 5 && $news2_score <= 6) {
-                $risk_selected = 2
-            }
-            elsif ($news2_score >= 7) {
-                $risk_selected = 3
-            }
-            else {
-                foreach my $observation_set ( keys %{ $assessment->{news2}->{score} } ) {
-                    if (
-                        defined($observation_set->{ordinal})
-                        && $observation_set->{ordinal} >= 3
-                    )   { 
-                        $risk_selected = 2;
-                    }
-                }
-            }
-            defined($risk_selected) ? $global->{clinical_risk}->[$risk_selected] : undef
-        };
-
-    };
+        $assessment->{news2}->{clinicalRisk} =
+            $news2_calculator->calculate_clinical_risk($assessment->{news2}->{score});
+    }
 
     if ($assessment->{covid}) {
         # no idea
@@ -1979,16 +1606,73 @@ sub return_col($self,$col_name) {
     return $sth->fetchall_arrayref;
 }
 
+sub return_col_sorted($self,$col_name,$sort_spec = {}) {
+    my $sql_str =   "SELECT $col_name FROM patient";
+
+    if (
+        $self->check_valid_col($sort_spec->{key})
+        &&
+        $sort_spec->{value} =~ m/^ASC|DESC$/
+    ) {
+        $sql_str .= join(' ',' ORDER BY',$sort_spec->{key},$sort_spec->{value});
+    }
+
+    my $sth     =   $self->{dbh}->prepare($sql_str);
+    $sth->execute();
+    return $sth->fetchall_arrayref;
+}
+
+sub check_valid_col($self,$col_name) {
+    my $sql_str =   "SELECT COUNT(*) AS CNTREC FROM pragma_table_info('PATIENT') WHERE name=?";
+    my $sth     =   $self->{dbh}->prepare($sql_str);
+    $sth->execute($col_name);
+    my $row = $sth->fetch;
+    return ($row->[0] + 0);
+}
+
 sub return_single_cell($self,$col_name,$col_value,$target_col_name) {
     my $sql_str =   "SELECT $target_col_name FROM patient WHERE $col_name = ?";
     my $sth     =   $self->{dbh}->prepare($sql_str);
     $sth->execute($col_value);
     my $sql_return = $sth->fetch;
-    return $sql_return->[0];
+    return $sql_return->[0] ? $sql_return->[0] : undef;
 }
 
+sub return_row($self,$col_name,$col_value) {
+    my $sql_str =   "SELECT * FROM patient WHERE $col_name = ? LIMIT 1";
+    my $sth     =   $self->{dbh}->prepare($sql_str);
+    $sth->execute($col_value);
+    my $intermediatory_return = $sth->fetchall_hashref($col_name);
+    if (!defined($intermediatory_return->{$col_value})) { 
+        return {};
+    } else {
+        return $intermediatory_return->{$col_value};
+    }
+}
 
+sub search_match($self,$search_key,$search_value) {
+    my $sql_str =   "SELECT uuid FROM patient WHERE $search_key = ? LIMIT 1";
 
+    if (
+        $search_key !~ m/^[a-z]+$/i
+        ||
+        !$self->check_valid_col($search_key)
+    ) {
+        return undef;
+    }
+
+    my $sth     =   $self->{dbh}->prepare($sql_str);
+    $sth->execute($search_value);
+    my $row = $sth->fetch;
+
+    if (scalar(@{$row}) == 1) { 
+        return $row->[0];
+    }
+    else {
+        say STDERR "WARNING: Returning undef to search_match";
+        return undef;
+    }
+}
 
 package EHRHelper;
 
