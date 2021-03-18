@@ -1446,7 +1446,7 @@ sub fill_in_scores {
 
     if ($assessment->{news2}) {
         my $news2_scoring = $news2_calculator->news2_calculate_score({
-            'respiration_rate'          =>  $assessment->{news2}->{respirations}->{magnitude},
+            'respiration_rate'          =>  $assessment->{news2}->{respiration_rate}->{magnitude},
             'spo2_scale_1'              =>  $assessment->{news2}->{spo2},
             'pulse'                     =>  $assessment->{news2}->{pulse}->{magnitude},
             'temperature'               =>  $assessment->{news2}->{temperature}->{magnitude},
