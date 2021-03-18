@@ -95,49 +95,6 @@ my $global      = {
         'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
         'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
     },
-    clinical_risk   =>  [
-        {
-            'localizedDescriptions' => {
-                'en' => 'Ward-based response.'
-            },
-            'value' => 'at0057',
-            'label' => 'Low',
-            'localizedLabels' => {
-                'en' => 'Low'
-            }
-        },
-        {
-            'localizedLabels' => {
-                'en' => 'Low-medium'
-            },
-            'label' => 'Low-medium',
-            'value' => 'at0058',
-            'localizedDescriptions' => {
-                'en' => 'Urgent ward-based response.'
-            }
-        },
-        {
-            'localizedDescriptions' => {
-                'en' => 'Key threshold for urgent response.'
-            },
-            'value' => 'at0059',
-            'label' => 'Medium',
-            'localizedLabels' => {
-                'en' => 'Medium'
-            }
-        },
-        {
-            'value' => 'at0060',
-
-            'localizedDescriptions' => {
-                'en' => 'Urgent or emergency response.'
-            },
-            'localizedLabels' => {
-                'en' => 'High'
-            },
-            'label' => 'High'
-        }
-    ]
 };
 
 # Make sure ehrbase has its base template
@@ -1447,7 +1404,7 @@ sub summarise_composed_assessment {
     if ($composed->{news2}) {
         $summary->{news2}   =   do {
             {
-                clinicalRisk    =>  $composed->{news2}->{clinicalRisk},
+                clinicalRisk    =>  $news2_calculator->calculate_clinical_risk($composed->{news2}),
                 score           =>  $composed->{news2}->{score},
                 trend           =>  $composed->{news2}->{trend},
             };
@@ -1545,33 +1502,9 @@ sub fill_in_scores {
         };
 
         # Add in clinical risk
-        $assessment->{news2}->{clinicalRisk} = do {
-            my $news2_score = $news2_scoring->{state}->{score};
-            my $risk_selected;
-
-            if ($news2_score >= 0 && $news2_score <= 4) {
-                $risk_selected = 0
-            }
-            elsif ($news2_score >= 5 && $news2_score <= 6) {
-                $risk_selected = 2
-            }
-            elsif ($news2_score >= 7) {
-                $risk_selected = 3
-            }
-            else {
-                foreach my $observation_set ( keys %{ $assessment->{news2}->{score} } ) {
-                    if (
-                        defined($observation_set->{ordinal})
-                        && $observation_set->{ordinal} >= 3
-                    )   { 
-                        $risk_selected = 2;
-                    }
-                }
-            }
-            defined($risk_selected) ? $global->{clinical_risk}->[$risk_selected] : undef
-        };
-
-    };
+        $assessment->{news2}->{clinicalRisk} =
+            $news2_calculator->calculate_clinical_risk($assessment->{news2}->{score});
+    }
 
     if ($assessment->{covid}) {
         # no idea
