@@ -1201,10 +1201,15 @@ sub get_compositions($patient_uuid) {
     };
 
     my $get_node_with_name = sub ($dom, $name) {
-        my $node = $dom->find('name > value')->grep(sub { $_->text eq $name })->first;
+        my $nodes = $dom->find('name > value')->grep(sub { $_->text eq $name });
 
-        if ($node) {
-            return $node->parent->parent;
+        if (wantarray) {
+            return $nodes->map( sub { $_->parent->parent } );
+        }
+        else {
+            if ($nodes->size) {
+                return $nodes->first->parent->parent;
+            }
         }
 
         return;
