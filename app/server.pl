@@ -1503,7 +1503,7 @@ sub fill_in_scores {
 
         # Add in clinical risk
         $assessment->{news2}->{clinicalRisk} =
-            $news2_calculator->calculate_clinical_risk($assessment->{news2}->{score});
+            $news2_calculator->calculate_clinical_risk($assessment->{news2});
     }
 
     if ($assessment->{covid}) {
