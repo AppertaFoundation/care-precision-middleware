@@ -758,12 +758,12 @@ my $handler__meta_demographics_patient = POE::Session->create(
             # at present will basically ignore sort and only return one item
             if ($search_spec->{search}->{enabled} == 1) {
                 # Frontend sends id, when it should send uuid
-                my $search_key      =   'uuid';
-                if ($search_spec->{search}->{key} ne 'id')    {
-                    $search_key = $search_spec->{search}->{key};
-                }
-                my $search_value    =
-                    $search_spec->{search}->{value};
+                $search_spec->{search}->{key} = 'uuid'
+                    if $search_spec->{search}->{key} eq 'id';
+
+                my $search_key = $search_spec->{search}->{key};
+
+                my $search_value = $search_spec->{search}->{value};
 
                 my $search_match = $dbh->search_match($search_key,$search_value);
 
@@ -779,7 +779,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
             if (scalar @{$search_result} > 0) {
                 say STDERR "Compatability function in use for birth_date, at line: ".__LINE__;
-                map { 
+                map {
                     $_->{birthDate} = $_->{birth_date}; 
                     $_->{birthDateAsString} = $_->{birth_date_string};
                     $_->{id} = $_->{uuid}
