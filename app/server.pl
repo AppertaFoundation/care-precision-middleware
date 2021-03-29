@@ -1322,6 +1322,50 @@ sub get_compositions($patient_uuid) {
                 }
             };
         }
+
+        my $covid_node = $get_node_with_name->($xml, 'Covid');
+
+        if ($covid_node) {
+            my $assessment = {};
+            if (my $symptoms = $covid_node->$dig_into_xml_for({ name => "Covid symptoms" })) {
+                $assessment->{date_of_onset_of_first_symptoms} = $symptoms->$dig_into_xml_for(
+                    { name => "Date of onset of first symptoms" },
+                    'value[xsi\:type]'
+                );
+
+                $assessment->{specific_symptom_sign} = [
+                    map { {
+                        value => $_->$dig_into_xml_for('value > value'),
+                        code => $_->$dig_into_xml_for('code')
+                    } }
+                    $symptoms->$dig_into_xml_for({ name => "Symptom or sign name"})
+                ];
+            }
+
+            if (my $exposure = $covid_node->$dig_into_xml_for({ name => "Covid-19 exposure" })) {
+                if (my $struct = $exposure->$dig_into_xml_for({ name => "Care setting has confirmed Covid-19" })) {
+                    $assessment->{covid_19_exposure}->{care_setting_has_confirmed_covid_19} = {
+                        value => $struct->$dig_into_xml_for('value > value'),
+                        code => $struct->$dig_into_xml_for('code_string')
+                    }
+                }
+            }
+
+            if (my $exposure = $covid_node->$dig_into_xml_for({ name => "Covid-19 exposure" })) {
+                if (my $struct = $exposure->$dig_into_xml_for({ name => "Contact with suspected/confirmed Covid-19" })) {
+                    $assessment->{covid_19_exposure}->{contact_with_suspected_confirmed_covid_19} = {
+                        value => $struct->$dig_into_xml_for('value > value'),
+                        code => $struct->$dig_into_xml_for('code_string')
+                    }
+                }
+            }
+
+            if (my $notes = $covid_node->$dig_into_xml_for({ name => "Covid notes" })) {
+                $assessment->{covid_notes} = $notes->$dig_into_xml_for('value > value');
+            }
+
+            push @assessments, { covid => $assessment };
+        }
     }
 
     return @assessments;
