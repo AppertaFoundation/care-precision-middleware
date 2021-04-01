@@ -753,6 +753,19 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     push @{$search_result},$search_db_ref;
                 }
             }
+            else {
+                foreach my $uuid_return ( @{ $dbh->return_col('uuid') }) {
+                    my $userid  =
+                        $uuid_return->[0];
+
+                    my $search_db_ref   =   $dbh->return_row(
+                        'uuid',
+                        $userid
+                    );
+
+                    push @{$search_result},$search_db_ref;
+                }
+            }
 
             # Search - should be restricted to what is already in search_result!
             # at present will basically ignore sort and only return one item
