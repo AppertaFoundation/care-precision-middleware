@@ -1349,7 +1349,7 @@ sub get_compositions($patient_uuid) {
                 $assessment->{specific_symptom_sign} = [
                     map { {
                         value => $_->$dig_into_xml_for('value > value'),
-                        code => $_->$dig_into_xml_for('code')
+                        code => $_->$dig_into_xml_for('code_string')
                     } }
                     $symptoms->$dig_into_xml_for({ name => "Symptom or sign name"})
                 ];
@@ -1424,10 +1424,15 @@ sub compose_assessments($patient_uuid, @extra) {
                 ]
             }
         }
+
+        if ($composition->{covid}) {
+            $composed->{covid} //= $composition->{covid}
+        }
     }
 
     # Why write stuff like this >.> it could be made so much clearer just 
     # taking up a tiny bit more vertical height.... (comment by pgw)
+    # [AD] If you don't like it, edit it
     $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis news2/;
 
     return $composed;
