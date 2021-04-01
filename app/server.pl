@@ -366,15 +366,8 @@ my $handler__cdr_draft = POE::Session->create(
             my $patient_uuid    =
                 $payload->{header}->{uuid} ? uc($payload->{header}->{uuid}) : undef;
 
-            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump begin " . "-"x10;
-            say STDERR Dumper($assessment);
-            say STDERR "-"x10 . " Assessment(/cdr/draft) Dump _end_ " . "-"x10;
-
-            if (defined $patient_uuid && $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
-                my $patient = my $search_db_ref   =   $dbh->return_row(
-                    'uuid',
-                    $patient_uuid
-                );
+            if (defined $patient_uuid && $global->{uuids}->{$patient_uuid}) {
+                my $patient = $global->{uuids}->{$patient_uuid};
 
                 $patient->{situation}  = $payload->{situation};
                 $patient->{background} = $payload->{background};
@@ -495,10 +488,6 @@ my $handler__cdr = POE::Session->create(
             # We have a valid templateid request lets proceed with creating a composition!
             my $patient_uuid = $passed_objects->{header}->{uuid} ? uc($passed_objects->{header}->{uuid}) : undef;
 
-            # If the patient uuid is invalid, return error
-            say STDERR "-"x10 . " Assessment(/cdr) Dump begin " . "-"x10;
-            say STDERR Dumper($passed_objects);
-            say STDERR "-"x10 . " Assessment(/cdr) Dump _end_ " . "-"x10;
 
             if (!defined $patient_uuid || !$dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
                 my $error_str = "Supplied UUID was missing from header or not a valid ehrid UUID.";
@@ -538,9 +527,12 @@ my $handler__cdr = POE::Session->create(
             $composition_obj->{output}  =   $xml_transformation->($composition_obj);
 
             # Write to /tmp for a log
-            my $comp_path = '/tmp/'.time.".log";
-            say STDERR "Composition raw dump: $comp_path";
-            path($comp_path)->spew($composition_obj->{output});
+            if ($ENV{DEBUG}) {
+                my ($fh, $fn) = tempfile;
+                binmode $fh, ':utf8';
+                print $fh $composition_obj->{output};
+                say STDERR "Composition XML is in $fn";
+            }
 
             my $ua = Mojo::UserAgent->new;
 
@@ -761,17 +753,30 @@ my $handler__meta_demographics_patient = POE::Session->create(
                     push @{$search_result},$search_db_ref;
                 }
             }
+            else {
+                foreach my $uuid_return ( @{ $dbh->return_col('uuid') }) {
+                    my $userid  =
+                        $uuid_return->[0];
+
+                    my $search_db_ref   =   $dbh->return_row(
+                        'uuid',
+                        $userid
+                    );
+
+                    push @{$search_result},$search_db_ref;
+                }
+            }
 
             # Search - should be restricted to what is already in search_result!
             # at present will basically ignore sort and only return one item
             if ($search_spec->{search}->{enabled} == 1) {
                 # Frontend sends id, when it should send uuid
-                my $search_key      =   'uuid';
-                if ($search_spec->{search}->{key} ne 'id')    {
-                    $search_key = $search_spec->{search}->{key};
-                }
-                my $search_value    =
-                    $search_spec->{search}->{value};
+                $search_spec->{search}->{key} = 'uuid'
+                    if $search_spec->{search}->{key} eq 'id';
+
+                my $search_key = $search_spec->{search}->{key};
+
+                my $search_value = $search_spec->{search}->{value};
 
                 my $search_match = $dbh->search_match($search_key,$search_value);
 
@@ -787,7 +792,7 @@ my $handler__meta_demographics_patient = POE::Session->create(
 
             if (scalar @{$search_result} > 0) {
                 say STDERR "Compatability function in use for birth_date, at line: ".__LINE__;
-                map { 
+                map {
                     $_->{birthDate} = $_->{birth_date}; 
                     $_->{birthDateAsString} = $_->{birth_date_string};
                     $_->{id} = $_->{uuid}
@@ -1209,10 +1214,15 @@ sub get_compositions($patient_uuid) {
     };
 
     my $get_node_with_name = sub ($dom, $name) {
-        my $node = $dom->find('name > value')->grep(sub { $_->text eq $name })->first;
+        my $nodes = $dom->find('name > value')->grep(sub { $_->text eq $name });
 
-        if ($node) {
-            return $node->parent->parent;
+        if (wantarray) {
+            return $nodes->map( sub { $_->parent->parent } );
+        }
+        else {
+            if ($nodes->size) {
+                return $nodes->first->parent->parent;
+            }
         }
 
         return;
@@ -1244,11 +1254,7 @@ sub get_compositions($patient_uuid) {
     my @assessments;
     foreach my $composition (@{$composition_objs}) {
         my $xml_string = $retrieve_composition->($patient_uuid,$composition->[0]);
-        my ($fh, $fn) = tempfile;
-        binmode $fh, ':utf8';
-        say STDERR $fn;
         my $xml = Mojo::DOM->with_roles('+PrettyPrinter')->new($xml_string);
-        print $fh $xml->to_pretty_string;
 
         my $news2_node = $get_node_with_name->($xml, 'NEWS2');
 
@@ -1329,6 +1335,50 @@ sub get_compositions($patient_uuid) {
                 }
             };
         }
+
+        my $covid_node = $get_node_with_name->($xml, 'Covid');
+
+        if ($covid_node) {
+            my $assessment = {};
+            if (my $symptoms = $covid_node->$dig_into_xml_for({ name => "Covid symptoms" })) {
+                $assessment->{date_of_onset_of_first_symptoms} = $symptoms->$dig_into_xml_for(
+                    { name => "Date of onset of first symptoms" },
+                    'value[xsi\:type]'
+                );
+
+                $assessment->{specific_symptom_sign} = [
+                    map { {
+                        value => $_->$dig_into_xml_for('value > value'),
+                        code => $_->$dig_into_xml_for('code_string')
+                    } }
+                    $symptoms->$dig_into_xml_for({ name => "Symptom or sign name"})
+                ];
+            }
+
+            if (my $exposure = $covid_node->$dig_into_xml_for({ name => "Covid-19 exposure" })) {
+                if (my $struct = $exposure->$dig_into_xml_for({ name => "Care setting has confirmed Covid-19" })) {
+                    $assessment->{covid_19_exposure}->{care_setting_has_confirmed_covid_19} = {
+                        value => $struct->$dig_into_xml_for('value > value'),
+                        code => $struct->$dig_into_xml_for('code_string')
+                    }
+                }
+            }
+
+            if (my $exposure = $covid_node->$dig_into_xml_for({ name => "Covid-19 exposure" })) {
+                if (my $struct = $exposure->$dig_into_xml_for({ name => "Contact with suspected/confirmed Covid-19" })) {
+                    $assessment->{covid_19_exposure}->{contact_with_suspected_confirmed_covid_19} = {
+                        value => $struct->$dig_into_xml_for('value > value'),
+                        code => $struct->$dig_into_xml_for('code_string')
+                    }
+                }
+            }
+
+            if (my $notes = $covid_node->$dig_into_xml_for({ name => "Covid notes" })) {
+                $assessment->{covid_notes} = $notes->$dig_into_xml_for('value > value');
+            }
+
+            push @assessments, { covid => $assessment };
+        }
     }
 
     return @assessments;
@@ -1374,10 +1424,15 @@ sub compose_assessments($patient_uuid, @extra) {
                 ]
             }
         }
+
+        if ($composition->{covid}) {
+            $composed->{covid} //= $composition->{covid}
+        }
     }
 
     # Why write stuff like this >.> it could be made so much clearer just 
     # taking up a tiny bit more vertical height.... (comment by pgw)
+    # [AD] If you don't like it, edit it
     $composed->{$_}->{trend} //= 'first' for grep exists $composed->{$_}, qw/denwis news2/;
 
     return $composed;

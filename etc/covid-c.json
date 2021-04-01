@@ -1,0 +1,52 @@
+{
+    "header": {
+        "start_time": "2021-03-01T14:55:22.706Z",
+        "uuid": "5F7C7670-419B-40E6-9596-AC39D670BF15",
+        "healthcare_facility": "Glen Carse Care Home",
+        "composer": {
+            "name": "RN Joyce Brown",
+            "id": {
+                "type": "NMC",
+                "id": "12342341",
+                "namespace": "uk.org.nmc"
+            }
+        }
+    },
+    "situation": {
+        "soft_signs": [
+            "Reduced mobility/coordination",
+            "Just not themselves",
+            "Had a fall"
+        ]
+    },
+    "background": {
+        "frailty": [
+            {
+                "code": "at0006",
+                "value": "Well"
+            }
+        ],
+        "height": {
+            "magnitude": 165,
+            "unit": "cm"
+        },
+        "weight": {
+            "magnitude": 20,
+            "unit": "kg"
+        }
+    },
+    "assessment": {
+      "covid":{
+         "covid_19_exposure":{
+            "care_setting_has_confirmed_covid_19":{
+               "code":"at0.14",
+               "value":"Potential contact exposure based on location"
+            },
+            "contact_with_suspected_confirmed_covid_19":{
+               "code":"at0.9",
+               "value":"Contact with confirmed Covid-19 case"
+            }
+         }
+      }
+    }
+}
