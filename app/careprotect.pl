@@ -1,6 +1,16 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
 
+use lib 'lib';
+use Utils;
+use EHRHelper;
+use DBHelper;
+
+use Data::UUID;
+use Encode;
+
+use Data::Dumper;
+
 plugin "OAuth2" => {
     opus => {
         # FIXME : secret should NOT be hard coded!
@@ -12,11 +22,39 @@ plugin "OAuth2" => {
     mocked => { key => 42 }
 };
 
-get '/c19-alpha/0.0.1/' => sub ($c) {
+plugin "SecureCORS" => {
+    'cors.origin' => '*',
+    'cors.headers' => 'Content-Type',
+    'cors.credentials' => 1,
+};
+
+my $api_prefix              =   '/c19-alpha/0.0.1';
+
+# Load JSON / UUID mnodules
+my $uuid                    =   Data::UUID->new;
+my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+my $dbh                     =   DBHelper->new(1);
+
+my $global      = {
+    sessions    =>  {},
+    config      =>  {
+        session_timeout =>  120
+    },
+    handler     =>  {},
+    helper      =>  {
+        'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
+        'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
+    },
+};
+
+
+under $api_prefix;
+
+get '/' => sub ($c) {
     $c->render(template => 'index');
 };
 
-get '/c19-alpha/0.0.1/_/auth' => sub ($c) {
+get '/_/auth' => sub ($c) {
     my $get_token_args = {
         redirect_uri => $c->url_for("/c19-alpha/0.0.1/_/auth")->userinfo(undef)->to_abs
     };
@@ -30,7 +68,25 @@ get '/c19-alpha/0.0.1/_/auth' => sub ($c) {
     });
 };
 
+post '/cdr/draft' => sub ($c) {
+    my $payload = $c->req->json;
+
+    my $assessment = $payload->{assessment};
+    my $patient_uuid = $payload->{header}->{uuid} or return $c->reply->not_found;
+
+    $dbh->return_single_cell('uuid',uc $patient_uuid,'uuid') or return $c->reply->not_found;
+
+    $assessment = Utils::fill_in_scores( $assessment );
+    my $summarised = Utils::summarise_composed_assessment( Utils::compose_assessments ( $patient_uuid, $assessment ) );
+
+    $summarised->{situation}  = $payload->{situation};
+    $summarised->{background} = $payload->{background};
+
+    $c->render( json => $summarised );
+};
+
 app->start;
+
 __DATA__
 
 @@ index.html.ep
