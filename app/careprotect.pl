@@ -28,25 +28,16 @@ plugin "SecureCORS" => {
     'cors.credentials' => 1,
 };
 
+helper search => sub ($c, $search_spec) {
+
+};
+
 my $api_prefix              =   '/c19-alpha/0.0.1';
 
 # Load JSON / UUID mnodules
 my $uuid                    =   Data::UUID->new;
 my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
 my $dbh                     =   DBHelper->new(1);
-
-my $global      = {
-    sessions    =>  {},
-    config      =>  {
-        session_timeout =>  120
-    },
-    handler     =>  {},
-    helper      =>  {
-        'days_of_week'      =>  [qw(Mon Tue Wed Thu Fri Sat Sun)],
-        'months_of_year'    =>  [qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec)],
-    },
-};
-
 
 under $api_prefix;
 
@@ -85,6 +76,12 @@ post '/cdr/draft' => sub ($c) {
     $c->render( json => $summarised );
 };
 
+post '/cdr' => sub ($c) {
+    my $search_input = $c->req->json;
+    my $search_spec = {
+    };
+    my $result = $c->search($search_spec);
+}
 app->start;
 
 __DATA__
