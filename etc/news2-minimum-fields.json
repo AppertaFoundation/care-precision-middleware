@@ -37,7 +37,7 @@
     },
     "assessment": {
         "news2": {
-            "respirations": {
+            "respiration_rate": {
                 "magnitude": 55
             },
             "spo2": 55,
