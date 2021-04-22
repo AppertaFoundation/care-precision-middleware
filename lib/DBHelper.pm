@@ -23,7 +23,7 @@ sub new($class,$set_debug = 0) {
         '',
         {
             'AutoCommit'                    =>  1,
-            'RaiseError'                    =>  1, 
+            'RaiseError'                    =>  1,
             'sqlite_see_if_its_a_number'    =>  1
         }
     );
@@ -33,11 +33,15 @@ sub new($class,$set_debug = 0) {
         'debug' =>  $set_debug
     }, $class;
 
+    return $self;
+}
+
+sub init_schema ($self) {
     # Double check the table exists and has content
     my $create_table    =   $self->check_table_exist('patient');
 
     if ($self->{debug}) {
-        say STDERR "Create table: $create_table"
+        say STDERR "Table existed: $create_table"
     }
 
     if ($create_table == 0) {
@@ -48,21 +52,97 @@ sub new($class,$set_debug = 0) {
     if ($self->{debug}) { 
         say STDERR "Row count is now: $row_count";
     }
-
-    return $self;
 }
 
 sub init_data($self,$create_table) {
     if ($create_table == 0) {
-        $self->{dbh}->do("CREATE TABLE patient (uuid string PRIMARY KEY,name string NOT NULL,birth_date number NOT NULL,birth_date_string string NOT NULL,name_search string NOT NULL,gender string NOT NULL, location string default 'Bedroom', nhsnumber number NOT NULL)");
+        $self->{dbh}->do(<<'SQL');
+CREATE TABLE patient (
+    uuid string PRIMARY KEY,
+    name string NOT NULL,
+    birth_date number NOT NULL,
+    birth_date_string string NOT NULL,
+    name_search string NOT NULL,
+    gender string NOT NULL,
+    location string default 'Bedroom',
+    nhsnumber number NOT NULL
+)
+SQL
     }
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('C7008950-79A8-4CE8-AC4E-975F1ACC7957','Miss Praveen Dora','19980313','1998-03-13','Praveen Dora','female','Bedroom','9876543210')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('89F0373B-CA53-41DF-8B54-0142EF3DDCD7','Mr HoratioSamson','19701016','1970-10-16','Horatio Samson','male','Bedroom','9876543211')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('0F878EC8-FECE-42DE-AE4E-F76BEFB902C2','Mrs Elsie Mills-Samson','19781201','1978-12-01','Elsie Mills-Samson','male','Bedroom','9876512345')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('220F7990-666E-4D64-9CBB-656051CE1E84','Mrs Fredrica Smith','19651213','1965-12-13','Fredrica Smith','female','Bedroom','3333333333')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('5F7C7670-419B-40E6-9596-AC39D670BF15','Miss Kendra Fitzgerald','19420528','1942-05-28','Kendra Fitzgerald','female','Bedroom','9564963656')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('4152DEC6-45E0-4EEE-A9DD-B233F1A07561','Mrs Christine Taylor','19230814','1923-08-14','Christine Taylor','female','Bedroom','9933157213')");
-    $self->{dbh}->do("INSERT INTO patient(uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber) VALUES('F6F1741D-BECA-4357-A23F-DD2B2FF934B9','Miss Darlene Cunningham','19980609','1998-06-09','Darlene Cunningham','female','Bedroom','9712738531')");
+    $self->{dbh}->do(<<SQL);
+INSERT INTO patient (uuid,name,birth_date,birth_date_string,name_search,gender,location,nhsnumber)
+VALUES
+(
+    'C7008950-79A8-4CE8-AC4E-975F1ACC7957',
+    'Miss Praveen Dora',
+    '19980313',
+    '1998-03-13',
+    'Praveen Dora',
+    'female',
+    'Bedroom',
+    '9876543210'
+),
+(
+    '89F0373B-CA53-41DF-8B54-0142EF3DDCD7',
+    'Mr HoratioSamson',
+    '19701016',
+    '1970-10-16',
+    'Horatio Samson',
+    'male',
+    'Bedroom',
+    '9876543211'
+),
+(
+    '0F878EC8-FECE-42DE-AE4E-F76BEFB902C2',
+    'Mrs Elsie Mills-Samson',
+    '19781201',
+    '1978-12-01',
+    'Elsie Mills-Samson',
+    'male',
+    'Bedroom',
+    '9876512345'
+),
+(
+    '220F7990-666E-4D64-9CBB-656051CE1E84',
+    'Mrs Fredrica Smith',
+    '19651213',
+    '1965-12-13',
+    'Fredrica Smith',
+    'female',
+    'Bedroom',
+    '3333333333'
+),
+(
+    '5F7C7670-419B-40E6-9596-AC39D670BF15',
+    'Miss Kendra Fitzgerald',
+    '19420528',
+    '1942-05-28',
+    'Kendra Fitzgerald',
+    'female',
+    'Bedroom',
+    '9564963656'
+),
+(
+    '4152DEC6-45E0-4EEE-A9DD-B233F1A07561',
+    'Mrs Christine Taylor',
+    '19230814',
+    '1923-08-14',
+    'Christine Taylor',
+    'female',
+    'Bedroom',
+    '9933157213'
+),
+(
+    'F6F1741D-BECA-4357-A23F-DD2B2FF934B9',
+    'Miss Darlene Cunningham',
+    '19980609',
+    '1998-06-09',
+    'Darlene Cunningham',
+    'female',
+    'Bedroom',
+    '9712738531'
+)
+SQL
 }
 
 sub check_table_exist($self,$tablename) {

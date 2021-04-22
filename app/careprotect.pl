@@ -7,9 +7,25 @@ use EHRHelper;
 use DBHelper;
 
 use Data::UUID;
+use DateTime;
 use Encode;
+use File::Temp qw(tempfile);
+use JSON::Pointer;
+use List::Gather;
+use Mojo::UserAgent;
+use Template;
+use Try::Tiny;
 
 use Data::Dumper;
+
+my $api_prefix              =   '/c19-alpha/0.0.1';
+
+# Load JSON / UUID mnodules
+my $uuid                    =   Data::UUID->new;
+my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
+my $dbh                     =   DBHelper->new(1);
+
+$dbh->init_schema;
 
 plugin "OAuth2" => {
     opus => {
@@ -29,15 +45,73 @@ plugin "SecureCORS" => {
 };
 
 helper search => sub ($c, $search_spec) {
+    my $search_result   =   [];
 
+    # Filter
+
+    # Sort
+    if ($search_spec->{sort}->{enabled}) {
+        foreach my $uuid_return ( $dbh->return_col_sorted('uuid',$search_spec->{sort})->@* ) {
+            my $userid  =
+                $uuid_return->[0];
+
+            my $search_db_ref   =   $dbh->return_row(
+                'uuid',
+                $userid
+            );
+
+            push @{$search_result},$search_db_ref;
+        }
+    }
+    else {
+        foreach my $uuid_return ( $dbh->return_col('uuid')->@* ) {
+            my $userid  =
+                $uuid_return->[0];
+
+            my $search_db_ref   =   $dbh->return_row(
+                'uuid',
+                $userid
+            );
+
+            push @{$search_result},$search_db_ref;
+        }
+    }
+
+    # Search - should be restricted to what is already in search_result!
+    # at present will basically ignore sort and only return one item
+    if ($search_spec->{search}->{enabled}) {
+        # Frontend sends id, when it should send uuid
+        $search_spec->{search}->{key} = 'uuid'
+            if $search_spec->{search}->{key} eq 'id';
+
+        my $search_key = $search_spec->{search}->{key};
+
+        my $search_value = $search_spec->{search}->{value};
+
+        my $search_match = $dbh->search_match($search_key,$search_value);
+
+        if ($search_match) {
+            my $search_db_ref   =   $dbh->return_row(
+                'uuid',
+                $search_match
+            );
+
+            push @{$search_result},$search_db_ref;
+        }
+    }
+
+    if (@$search_result) {
+        say STDERR "Compatability function in use for birth_date, at line: ".__LINE__;
+        map {
+            $_->{birthDate} = $_->{birth_date}; 
+            $_->{birthDateAsString} = $_->{birth_date_string};
+            $_->{id} = $_->{uuid}
+        } @{$search_result};
+    }
+
+    # If no pagination just return whatever survived the run
+    return $search_result;
 };
-
-my $api_prefix              =   '/c19-alpha/0.0.1';
-
-# Load JSON / UUID mnodules
-my $uuid                    =   Data::UUID->new;
-my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
-my $dbh                     =   DBHelper->new(1);
 
 under $api_prefix;
 
@@ -59,6 +133,47 @@ get '/_/auth' => sub ($c) {
     });
 };
 
+get '/meta/demographics/patient_list' => sub ($c) {
+    my $params = $c->req->query_params;
+    my $search_spec = {
+        gather {
+            if ($params->{search_key} and $params->{search_value}) {
+                take (
+                    search => {
+                        key   => $params->{'search_key'},
+                        value => $params->{'search_value'}
+                    },
+                )
+            }
+
+            if ($params->{sort_key} and $params->{sort_value}) {
+                take (
+                    sort => {
+                        key   => $params->{'sort_key'},
+                        value => $params->{'sort_value'}
+                    },
+                )
+            }
+        }
+    };
+
+    # Add in fast checks
+    foreach my $key (keys %{$search_spec}) {
+        my $valid_check = do {
+            my $values_valid = 1;
+            foreach my $subkey (keys %{$search_spec->{$key}}) {
+                if (!defined $search_spec->{$key}->{$subkey}) {
+                    $values_valid = 0;
+                }
+                last;
+            }
+            $values_valid
+        };
+        $search_spec->{$key}->{enabled} = $valid_check;
+    };
+    my $result = $c->search($search_spec);
+};
+
 post '/cdr/draft' => sub ($c) {
     my $payload = $c->req->json;
 
@@ -76,12 +191,63 @@ post '/cdr/draft' => sub ($c) {
     $c->render( json => $summarised );
 };
 
+# get /cdr used to list templates but we don't want that now
+
 post '/cdr' => sub ($c) {
-    my $search_input = $c->req->json;
-    my $search_spec = {
+    my $passed_composition = $c->req->json;
+
+    my $patient_uuid = $passed_composition->{header}->{uuid} ? uc($passed_composition->{header}->{uuid}) : undef;
+
+    if ( not defined $patient_uuid ) {
+        $c->status(400);
+        $c->render( json => { error => "UUID missing from header" } );
+        return;
+    }
+
+    if (! $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
+        $c->status(500);
+        $c->render( json => { error => "Supplied UUID ($patient_uuid) was not present in local ehr db" } );
+        return;
+    }
+
+    # Create a place to put everything we need for ease and clarity
+
+    my $xml_transformation = sub {
+        my $big_href = shift->{input};
+        my $tt2 = Template->new({ ENCODING => 'utf8' });
+
+        $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
+
+        my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
+
+        $tt2->process('composition.xml.tt2', {
+            json_path => $json_path,
+            generate_uuid => sub { $uuid->to_string($uuid->create) } },
+        \my $xml) or die $tt2->error;
+
+        return $xml;
     };
-    my $result = $c->search($search_spec);
-}
+
+    my $xml_composition = $xml_transformation->($passed_composition);
+
+    # Write to /tmp for a log
+    if ($ENV{DEBUG}) {
+        my ($fh, $fn) = tempfile;
+        binmode $fh, ':utf8';
+        print $fh $xml_transformation;
+        say STDERR "Composition XML is in $fn";
+    }
+
+    try {
+        Utils::store_composition($patient_uuid, $xml_composition);
+        $c->status(204);
+    }
+    catch {
+        $c->status(500);
+        $c->render(json => { error => $_ });
+    }
+};
+
 app->start;
 
 __DATA__

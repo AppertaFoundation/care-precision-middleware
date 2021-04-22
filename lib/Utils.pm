@@ -87,6 +87,10 @@ foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
         . $patient_name;
 }
 
+# Yeah I know but it's easier ok
+sub store_composition($patient_uuid, $composition) {
+    $ehrbase->store_composition($patient_uuid, $composition);
+}
 
 sub compose_assessments($patient_uuid, @extra) {
     # Put a draft assesment in @extra. You can do multiple I suppose.

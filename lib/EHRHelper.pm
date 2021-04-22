@@ -113,7 +113,7 @@ sub create_ehr($self,$uuid,$name,$nhsnumber) {
     }
 
     my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
-    
+
     return {
         code    =>  $res->code(),
         content =>  uc($uuid_extract)
@@ -427,4 +427,20 @@ sub get_compositions($self, $patient_uuid) {
     return @assessments;
 }
 
+sub store_composition($self, $patient_uuid, $composition) {
+    my $req_url = $self->{ehrbase} . "/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
+
+    my $request = POST(
+        $req_url, {
+            'Content-Type'  =>  'application/xml',
+            Accept          =>  '*/*'
+        } => encode_utf8($composition)
+    );
+    my $response = $self->{agent}->request($request);
+
+    if ($response->code != 204) {
+        die $response->to_string;
+    }
+    return;
+}
 1;
