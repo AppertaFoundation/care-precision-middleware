@@ -1,0 +1,11 @@
+requires 'Data::Dumper';
+requires 'Data::UUID';
+requires 'DateTime';
+requires 'DBD::SQLite';
+requires 'File::Slurp';
+requires 'JSON::Pointer';
+requires 'Mojolicious';
+requires 'Mojo::DOM::Role::PrettyPrinter';
+requires 'Path::Tiny';
+requires 'Template';
+requires 'Try::Tiny';
