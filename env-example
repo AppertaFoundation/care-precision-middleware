@@ -1,0 +1,49 @@
+SERIAL=S00382
+PORTBASE=383
+CONTAINER_VOLUME=~/.sys/tmp/
+
+# Defaults to localhost, requires sudo and scp if not localhost
+# NGINX_HOST=
+
+# A series on nginx geo ip statements
+# TRUSTED_UP=
+
+# Used by middleare
+FRONTEND_HOSTNAME=careprotect.dev-11.opusvl.dev
+
+# How to tel lthe frontend what the URL is for the middleware
+REACT_APP_API=https://middleware-careprotect.dev-11.opusvl.dev/c19-alpha/0.0.1
+REACT_APP_STATIC_COVID=true
+
+# ehrbase and ehrdb related enviromentals
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+EHRBASE_USER=ehrbase
+EHRBASE_PASSWORD=ehrbase
+
+# Default path to the Database 
+DB_URL=jdbc:postgresql://ehrdb/ehrbase
+
+# Frontend Env Covid Control Flags
+REACT_APP_STATIC_COVID_CONTROL=true
+REACT_APP_STATIC_COVID=true
+
+# Misc
+SYSTEM_NAME=local.ehrbase.org
+SECURITY_AUTHTYPE=BASIC
+SECURITY_AUTHUSER=ehrbase-user
+SECURITY_AUTHPASSWORD=SuperSecretPassword
+SECURITY_AUTHADMINUSER=ehrbase-admin
+SECURITY_AUTHADMINPASSWORD=EvenMoreSecretPassword
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=
+MANAGEMENT_ENDPOINTS_WEB_EXPOSURE=env,health,info,metrics,prometheus
+MANAGEMENT_ENDPOINTS_WEB_BASEPATH=/status
+MANAGEMENT_ENDPOINT_ENV_ENABLED=false
+MANAGEMENT_ENDPOINT_HEALTH_ENABLED=false
+MANAGEMENT_ENDPOINT_HEALTH_DATASOURCE_ENABLED=false
+MANAGEMENT_ENDPOINT_INFO_ENABLED=false
+MANAGEMENT_ENDPOINT_METRICS_ENABLED=false
+MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED=false
+MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=false
+
+MIDDLEWARE_IMAGE_VERSION=develop
