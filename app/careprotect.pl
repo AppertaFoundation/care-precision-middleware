@@ -25,8 +25,6 @@ my $uuid                    =   Data::UUID->new;
 my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
 my $dbh                     =   DBHelper->new(1);
 
-$dbh->init_schema;
-
 plugin "OAuth2" => {
     opus => {
         # FIXME : secret should NOT be hard coded!
