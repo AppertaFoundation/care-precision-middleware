@@ -28,7 +28,7 @@ use JSON::MaybeXS ':all';
 
 use DBHelper;
 
-my $dbh = DBHelper->new;
+my $dbh = DBHelper->new(1);
 
 # Primary code block
 sub new($class,$set_debug = 0,$ehrbase = 'http://localhost:8080') {

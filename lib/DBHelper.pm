@@ -18,7 +18,7 @@ use DBI;
 # Primary code block
 sub new($class,$set_debug = 0) {
     my $dbh = DBI->connect(
-        'dbi:SQLite:dbname=patient.db',
+        'dbi:SQLite:dbname=/opusvl/var/patient.db',
         '',
         '',
         {
@@ -32,6 +32,9 @@ sub new($class,$set_debug = 0) {
         'dbh'   =>  $dbh,
         'debug' =>  $set_debug
     }, $class;
+
+    my $create_table    =   $self->check_table_exist('patient');
+    if ($create_table==0) { $self->init_schema() }
 
     return $self;
 }
