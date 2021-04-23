@@ -26,4 +26,4 @@ RUN ln -s /opusvl/app/full-template.xml /full-template.xml
 # Use Carton to install the required dependancies on the target container
 RUN carton install --cached --deployment
 
-CMD [ "/dumb-init", "perl", "-I/opusvl/lib/", "-I/opusvl/local/lib/perl5", "/opusvl/app/careprotect.pl", "daemon" ]
+CMD [ "/dumb-init", "perl", "-I/opusvl/local/lib/perl5", "/opusvl/app/careprotect.pl", "daemon" ]
