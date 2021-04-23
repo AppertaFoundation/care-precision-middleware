@@ -11,3 +11,4 @@ requires 'Template';
 requires 'Try::Tiny';
 requires 'Mojolicious::Plugin::SecureCORS';
 requires 'Mojolicious::Plugin::OAuth2';
+requires 'Carton';
