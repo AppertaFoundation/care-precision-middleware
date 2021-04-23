@@ -22,3 +22,4 @@ requires 'HTTP::Status';
 requires 'HTTP::Cookies';
 requires 'LWP::UserAgent';
 requires 'Path::Tiny';
+requires 'List::Gather';
