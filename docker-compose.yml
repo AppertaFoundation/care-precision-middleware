@@ -22,7 +22,7 @@ services:
   middleware:
     image: mojo-middleware:latest
     ports:
-      - "40081:18080"
+      - "40081:3000"
     depends_on:
       - ehrbase
     environment:
