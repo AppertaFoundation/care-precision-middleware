@@ -40,6 +40,7 @@ plugin "SecureCORS" => {
     'cors.origin' => '*',
     'cors.headers' => 'Content-Type',
     'cors.credentials' => 1,
+    'cors.methods' => 'GET,POST,PUT,DELETE'
 };
 
 helper search => sub ($c, $search_spec) {
@@ -170,6 +171,8 @@ get '/meta/demographics/patient_list' => sub ($c) {
         $search_spec->{$key}->{enabled} = $valid_check;
     };
     my $result = $c->search($search_spec);
+
+    $c->render(json => $result);
 };
 
 post '/cdr/draft' => sub ($c) {
@@ -246,6 +249,8 @@ post '/cdr' => sub ($c) {
     }
 };
 
+app->plugin('SecureCORS');
+app->routes->to('cors.credentials'=>1);
 app->start;
 
 __DATA__
