@@ -30,14 +30,15 @@ RUN cpanm -n \
     URI::QueryParam \
     LWP::UserAgent.pm 
 
-COPY app /opusvl/app
-COPY lib /opusvl/lib
-
 COPY build-asset/dumb-init_1.2.4_x86_64 /dumb-init
 COPY build-asset/OpusVL-ACME-C19-0.001.tar.gz /root/OpusVL-ACME-C19-0.001.tar.gz
 RUN cpanm /root/OpusVL-ACME-C19-0.001.tar.gz
 
 RUN chmod +x /dumb-init
+
+# Do this late because it changes the most
+COPY app /opusvl/app
+COPY lib /opusvl/lib
 
 # FIXME, server.pl expects patients.json in PWD
 RUN ln -s /opusvl/app/full-template.xml /full-template.xml
