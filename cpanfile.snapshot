@@ -710,6 +710,53 @@ DISTRIBUTIONS
       perl 5.008001
       strict 0
       warnings 0
+  Exporter-Tiny-1.002002
+    pathname: T/TO/TOBYINK/Exporter-Tiny-1.002002.tar.gz
+    provides:
+      Exporter::Shiny 1.002002
+      Exporter::Tiny 1.002002
+    requirements:
+      ExtUtils::MakeMaker 6.17
+      perl 5.006001
+  ExtUtils-Config-0.008
+    pathname: L/LE/LEONT/ExtUtils-Config-0.008.tar.gz
+    provides:
+      ExtUtils::Config 0.008
+    requirements:
+      Data::Dumper 0
+      ExtUtils::MakeMaker 6.30
+      strict 0
+      warnings 0
+  ExtUtils-Helpers-0.026
+    pathname: L/LE/LEONT/ExtUtils-Helpers-0.026.tar.gz
+    provides:
+      ExtUtils::Helpers 0.026
+      ExtUtils::Helpers::Unix 0.026
+      ExtUtils::Helpers::VMS 0.026
+      ExtUtils::Helpers::Windows 0.026
+    requirements:
+      Carp 0
+      Exporter 5.57
+      ExtUtils::MakeMaker 0
+      File::Basename 0
+      File::Copy 0
+      File::Spec::Functions 0
+      Text::ParseWords 3.24
+      perl 5.006
+      strict 0
+      warnings 0
+  ExtUtils-InstallPaths-0.012
+    pathname: L/LE/LEONT/ExtUtils-InstallPaths-0.012.tar.gz
+    provides:
+      ExtUtils::InstallPaths 0.012
+    requirements:
+      Carp 0
+      ExtUtils::Config 0.002
+      ExtUtils::MakeMaker 0
+      File::Spec 0
+      perl 5.006
+      strict 0
+      warnings 0
   File-ShareDir-1.118
     pathname: R/RE/REHSACK/File-ShareDir-1.118.tar.gz
     provides:
@@ -753,6 +800,23 @@ DISTRIBUTIONS
       POSIX 0
       strict 0
       warnings 0
+  IO-Socket-SSL-2.070
+    pathname: S/SU/SULLR/IO-Socket-SSL-2.070.tar.gz
+    provides:
+      IO::Socket::SSL 2.070
+      IO::Socket::SSL::Intercept 2.056
+      IO::Socket::SSL::OCSP_Cache 2.070
+      IO::Socket::SSL::OCSP_Resolver 2.070
+      IO::Socket::SSL::PublicSuffix undef
+      IO::Socket::SSL::SSL_Context 2.070
+      IO::Socket::SSL::SSL_HANDLE 2.070
+      IO::Socket::SSL::Session_Cache 2.070
+      IO::Socket::SSL::Utils 2.014
+    requirements:
+      ExtUtils::MakeMaker 0
+      Mozilla::CA 0
+      Net::SSLeay 1.46
+      Scalar::Util 0
   JSON-4.03
     pathname: I/IS/ISHIGAKI/JSON-4.03.tar.gz
     provides:
@@ -781,6 +845,29 @@ DISTRIBUTIONS
       Module::Build 0.38
       URI::Escape 3.31
       perl 5.008001
+  List-MoreUtils-0.430
+    pathname: R/RE/REHSACK/List-MoreUtils-0.430.tar.gz
+    provides:
+      List::MoreUtils 0.430
+      List::MoreUtils::PP 0.430
+    requirements:
+      Exporter::Tiny 0.038
+      ExtUtils::MakeMaker 0
+      List::MoreUtils::XS 0.430
+  List-MoreUtils-XS-0.430
+    pathname: R/RE/REHSACK/List-MoreUtils-XS-0.430.tar.gz
+    provides:
+      List::MoreUtils::XS 0.430
+    requirements:
+      Carp 0
+      ExtUtils::MakeMaker 0
+      File::Basename 0
+      File::Copy 0
+      File::Path 0
+      File::Spec 0
+      IPC::Cmd 0
+      XSLoader 0.22
+      base 0
   MRO-Compat-0.13
     pathname: H/HA/HAARG/MRO-Compat-0.13.tar.gz
     provides:
@@ -834,6 +921,31 @@ DISTRIBUTIONS
       Text::ParseWords 0
       perl 5.006001
       version 0.87
+  Module-Build-Tiny-0.039
+    pathname: L/LE/LEONT/Module-Build-Tiny-0.039.tar.gz
+    provides:
+      Module::Build::Tiny 0.039
+    requirements:
+      CPAN::Meta 0
+      DynaLoader 0
+      Exporter 5.57
+      ExtUtils::CBuilder 0
+      ExtUtils::Config 0.003
+      ExtUtils::Helpers 0.020
+      ExtUtils::Install 0
+      ExtUtils::InstallPaths 0.002
+      ExtUtils::ParseXS 0
+      File::Basename 0
+      File::Find 0
+      File::Path 0
+      File::Spec::Functions 0
+      Getopt::Long 2.36
+      JSON::PP 2
+      Pod::Man 0
+      TAP::Harness::Env 0
+      perl 5.006
+      strict 0
+      warnings 0
   Module-Implementation-0.09
     pathname: D/DR/DROLSKY/Module-Implementation-0.09.tar.gz
     provides:
@@ -983,6 +1095,41 @@ DISTRIBUTIONS
       IO::Socket::IP 0.37
       Sub::Util 1.41
       perl 5.016
+  Mojolicious-Plugin-OAuth2-1.59
+    pathname: J/JH/JHTHORSEN/Mojolicious-Plugin-OAuth2-1.59.tar.gz
+    provides:
+      Mojolicious::Plugin::OAuth2 1.59
+    requirements:
+      ExtUtils::MakeMaker 0
+      IO::Socket::SSL 1.94
+      Mojolicious 7.53
+  Mojolicious-Plugin-SecureCORS-v2.0.4
+    pathname: P/PO/POWERMAN/Mojolicious-Plugin-SecureCORS-v2.0.4.tar.gz
+    provides:
+      Mojolicious::Plugin::SecureCORS v2.0.4
+    requirements:
+      List::MoreUtils 0.34
+      Module::Build::Tiny 0.034
+      Mojo::Base 0
+      Mojolicious 8.67
+      perl 5.010001
+  Mozilla-CA-20200520
+    pathname: A/AB/ABH/Mozilla-CA-20200520.tar.gz
+    provides:
+      Mozilla::CA 20200520
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test 0
+      perl 5.006
+  Net-SSLeay-1.90
+    pathname: C/CH/CHRISN/Net-SSLeay-1.90.tar.gz
+    provides:
+      Net::SSLeay 1.90
+      Net::SSLeay::Handle 1.90
+    requirements:
+      ExtUtils::MakeMaker 0
+      MIME::Base64 0
+      perl 5.008001
   Package-Stash-0.39
     pathname: E/ET/ETHER/Package-Stash-0.39.tar.gz
     provides:
