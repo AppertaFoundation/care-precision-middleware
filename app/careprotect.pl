@@ -124,11 +124,15 @@ get '/_/auth' => sub ($c) {
         redirect_uri => $c->url_for("/c19-alpha/0.0.1/_/auth")->userinfo(undef)->to_abs
     };
 
+    $c->app->log->debug("Requesting token");
     $c->oauth2->get_token_p(opus => $get_token_args)->then(sub {
+        $c->app->log->debug("Got a token");
         return unless my $provider_res = shift;
-        $c->session(token => $provider_res->{access_token});
+        $c->app->log->debug($provider_res->{access_token});
+        $c->session->{token} = $provider_res->{access_token};
         $c->redirect_to("/");
     })->catch(sub {
+        $c->app->log->debug("errored");
         $c->render("connect", error => shift);
     });
 };
@@ -265,14 +269,15 @@ __DATA__
 % title 'Welcome';
 <h1>Welcome to the Mojolicious real-time web framework!</h1>
 
+<%= link_to "Connect!", $c->oauth2->auth_url("opus", scope => 'email profile openid') %>
+
+
 @@ layouts/default.html.ep
 <!DOCTYPE html>
 <html>
   <head><title><%= title %></title></head>
   <body>
     Click here to log in:
-    <%= link_to "Connect!", $c->oauth2->auth_url("opus", scope => 'email profile openid') %>
-
     <%= content %>
   </body>
 </html>
