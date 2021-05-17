@@ -8,15 +8,12 @@ use JSON::MaybeXS;
 use OpusVL::ACME::C19;
 use EHRHelper;
 
-my $api_hostname            =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
-my ($api_hostname_cookie)   =   $ENV{FRONTEND_HOSTNAME} =~ m/^.*?(\..*)$/;
-my $ehrbase                 =   $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+my $ehrbase = $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
 
 say STDERR "ehrbase URI: $ehrbase";
 
-
 # news/db module started in LOUD mode, remove '1' to disable
-my $news2_calculator        =   OpusVL::ACME::C19->new(1);
+my $news2_calculator = OpusVL::ACME::C19->new(1);
 
 # Make sure ehrbase is synced with our patients
 sub new ($class, %args) {
