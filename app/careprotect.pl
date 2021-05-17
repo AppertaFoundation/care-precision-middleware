@@ -13,6 +13,7 @@ use File::Temp qw(tempfile);
 use JSON::Pointer;
 use List::Gather;
 use Mojo::UserAgent;
+use Mojo::File qw(curfile);
 use Template;
 use Try::Tiny;
 
@@ -23,7 +24,6 @@ my $api_prefix              =   '/c19-alpha/0.0.1';
 # Load JSON / UUID mnodules
 my $uuid                    =   Data::UUID->new;
 my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
-my $dbh                     =   DBHelper->new(1);
 
 plugin "OAuth2" => {
     opus => {
@@ -44,6 +44,17 @@ plugin "SecureCORS" => {
     'cors.methods' => 'GET,POST,PUT,DELETE'
 };
 
+helper utils => sub ($c) {
+    state $utils = Utils->new(
+        template_path => curfile->dirname->sibling('etc'),
+        dbh => $c->dbh,
+    )
+};
+
+helper dbh => sub {
+    state $dbh = DBHelper->new( curfile->dirname->sibling('var'), 1 );
+};
+
 helper search => sub ($c, $search_spec) {
     my $search_result   =   [];
 
@@ -51,11 +62,11 @@ helper search => sub ($c, $search_spec) {
 
     # Sort
     if ($search_spec->{sort}->{enabled}) {
-        foreach my $uuid_return ( $dbh->return_col_sorted('uuid',$search_spec->{sort})->@* ) {
+        foreach my $uuid_return ( $c->dbh->return_col_sorted('uuid',$search_spec->{sort})->@* ) {
             my $userid  =
                 $uuid_return->[0];
 
-            my $search_db_ref   =   $dbh->return_row(
+            my $search_db_ref   =   $c->dbh->return_row(
                 'uuid',
                 $userid
             );
@@ -64,11 +75,11 @@ helper search => sub ($c, $search_spec) {
         }
     }
     else {
-        foreach my $uuid_return ( $dbh->return_col('uuid')->@* ) {
+        foreach my $uuid_return ( $c->dbh->return_col('uuid')->@* ) {
             my $userid  =
                 $uuid_return->[0];
 
-            my $search_db_ref   =   $dbh->return_row(
+            my $search_db_ref   =   $c->dbh->return_row(
                 'uuid',
                 $userid
             );
@@ -88,10 +99,10 @@ helper search => sub ($c, $search_spec) {
 
         my $search_value = $search_spec->{search}->{value};
 
-        my $search_match = $dbh->search_match($search_key,$search_value);
+        my $search_match = $c->dbh->search_match($search_key,$search_value);
 
         if ($search_match) {
-            my $search_db_ref   =   $dbh->return_row(
+            my $search_db_ref   =   $c->dbh->return_row(
                 'uuid',
                 $search_match
             );
@@ -186,10 +197,10 @@ post '/cdr/draft' => sub ($c) {
     my $assessment = $payload->{assessment};
     my $patient_uuid = $payload->{header}->{uuid} or return $c->reply->not_found;
 
-    $dbh->return_single_cell('uuid',uc $patient_uuid,'uuid') or return $c->reply->not_found;
+    $c->dbh->return_single_cell('uuid',uc $patient_uuid,'uuid') or return $c->reply->not_found;
 
-    $assessment = Utils::fill_in_scores( $assessment );
-    my $summarised = Utils::summarise_composed_assessment( Utils::compose_assessments ( $patient_uuid, $assessment ) );
+    $assessment = $c->utils->fill_in_scores( $assessment );
+    my $summarised = $c->utils->summarise_composed_assessment( $c->utils->compose_assessments ( $patient_uuid, $assessment ) );
 
     $summarised->{situation}  = $payload->{situation};
     $summarised->{background} = $payload->{background};
@@ -210,7 +221,7 @@ post '/cdr' => sub ($c) {
         return;
     }
 
-    if (! $dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
+    if (! $c->dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
         $c->status(500);
         $c->render( json => { error => "Supplied UUID ($patient_uuid) was not present in local ehr db" } );
         return;
@@ -245,7 +256,7 @@ post '/cdr' => sub ($c) {
     }
 
     try {
-        Utils::store_composition($patient_uuid, $xml_composition);
+        $c->utils->store_composition($patient_uuid, $xml_composition);
         $c->status(204);
     }
     catch {

@@ -16,9 +16,10 @@ use Data::Dumper;
 use DBI;
 
 # Primary code block
-sub new($class,$set_debug = 0) {
+sub new($class, $db_path, $set_debug = 0) {
+    $db_path->make_path;
     my $dbh = DBI->connect(
-        'dbi:SQLite:dbname=/opusvl/var/patient.db',
+        'dbi:SQLite:dbname=' . $db_path . '/patient.db',
         '',
         '',
         {

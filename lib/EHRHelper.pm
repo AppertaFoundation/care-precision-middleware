@@ -3,8 +3,7 @@ package EHRHelper;
 # TODO - accept a UA and use that
 
 # Internal perl modules (core)
-use strict;
-use warnings;
+use v5.24;
 
 # Internal perl modules (core,recommended)
 use utf8;
@@ -22,26 +21,93 @@ use HTTP::Request::Common;
 use HTTP::Status;
 use HTTP::Cookies;
 use LWP::UserAgent;
+use Path::Tiny;
 
 # Some JSON hackery
 use JSON::MaybeXS ':all';
 
-use DBHelper;
-
-my $dbh = DBHelper->new(1);
-
 # Primary code block
-sub new($class,$set_debug = 0,$ehrbase = 'http://localhost:8080') {
+sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = 'http://localhost:8080') {
     my $debug = 0;
     if ($set_debug) { $debug = 1 }
 
     my $self = bless {
-        agent   =>  LWP::UserAgent->new(),
-        ehrbase =>  $ehrbase,
-        debug   =>  $debug
+        agent         => LWP::UserAgent->new(),
+        ehrbase       => $ehrbase,
+        dbh           => $dbh,
+        debug         => $debug,
+        template_path => $template_path,
     }, $class;
 
+    $self->init_ehrbase;
+
     return $self;
+}
+
+sub init_ehrbase($self) {
+    while (my $query = $self->_con_test()) {
+        if ($query->{code} == 200) {
+            my $template_list = decode_json($query->{content});
+            if (scalar(@{$template_list}) > 0) {
+                say STDERR "Templates already detected";
+                say STDERR Dumper($template_list);
+                last;
+            }
+
+            my $template_raw = Encode::encode_utf8(path($self->{template_path} . '/full-template.xml')->slurp);
+            my $response     = $self->send_template($template_raw);
+
+            if ($response->{code} == 204) {
+                say STDERR "Template successfully uploaded!";
+                last;
+            }
+            else {
+                say STDERR "Critical error uploading template! " . $response->{content};
+                die;
+            }
+        }
+        elsif ($query->{code} == 500) {
+            sleep 5;
+        }
+    }
+    foreach my $patient_ehrid_raw ($self->{dbh}->return_col('uuid')->@*) {
+        my $patient_ehrid = $patient_ehrid_raw->[0];
+
+        my $patient = $self->{dbh}->return_row(
+            'uuid',
+            $patient_ehrid
+        );
+
+        foreach my $validation_check_key (qw(name birth_date birth_date_string name_search gender location nhsnumber)) {
+            if (!defined($patient->{$validation_check_key})) {
+                say STDERR "WARNING: $patient_ehrid has NULL $validation_check_key";
+            }
+        }
+
+        my $patient_name        =   $patient->{'name'};
+        my $patient_nhsnumber   =   $patient->{'nhsnumber'};
+        my $res                 =   $self->check_ehr_exists($patient_nhsnumber);
+
+        if ($res->{code} != 200) {
+            my $create_record = $self->create_ehr(
+                $patient_ehrid,
+                $patient_name,
+                $patient_nhsnumber
+            );
+
+            if ($create_record->{code} != 204)  {
+                die "Failure creating patient!";
+            }
+        }
+
+        say "Patient " 
+            . $patient_ehrid
+            . ' linked with: '
+            . $patient_nhsnumber
+            . ' '
+            . $patient_name;
+    }
+
 }
 
 sub _create_ehr($self) {
@@ -64,7 +130,7 @@ sub _create_ehr($self) {
     };
 }
 
-sub con_test($self) {
+sub _con_test($self) {
     my $ehrbase =   $self->{ehrbase};
     my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
 
@@ -184,7 +250,7 @@ sub get_compositions($self, $patient_uuid) {
         die "No uuid passed to function";
     }
 
-    my $valid_uuid = $dbh->return_single_cell('uuid',$patient_uuid,'uuid');
+    my $valid_uuid = $self->{dbh}->return_single_cell('uuid',$patient_uuid,'uuid');
 
     if (!$valid_uuid) {
         # FUCK

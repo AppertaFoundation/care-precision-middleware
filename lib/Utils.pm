@@ -6,7 +6,6 @@ use experimental 'signatures';
 use Data::Dumper;
 use JSON::MaybeXS;
 use OpusVL::ACME::C19;
-use DBHelper;
 use EHRHelper;
 use Path::Tiny;
 
@@ -18,87 +17,29 @@ say STDERR "ehrbase URI: $ehrbase";
 
 
 # news/db module started in LOUD mode, remove '1' to disable
-my $dbh                     =   DBHelper->new(1);
-my $ehrclient               =   EHRHelper->new(1,$ehrbase);
 my $news2_calculator        =   OpusVL::ACME::C19->new(1);
 
-# Make sure ehrbase has its base template
-while (my $query = $ehrclient->con_test()) {
-    if ($query->{code} == 200) {
-        my $template_list = decode_json($query->{content});
-        if (scalar(@{$template_list}) > 0) {
-            say STDERR "Templates already detected";
-            say STDERR Dumper($template_list);
-            last;
-        }
-
-        my $template_raw    =   Encode::encode_utf8(path('full-template.xml')->slurp);
-        my $response        =   $ehrclient->send_template($template_raw);
-
-        if ($response->{code} == 204) {
-            say STDERR "Template successfully uploaded!";
-            last;
-        }
-        else {
-            say STDERR "Critical error uploading template!";
-            die;
-        }
-    }
-    elsif ($query->{code} == 500) {
-        sleep 5;
-    }
-}
-
 # Make sure ehrbase is synced with our patients
-foreach my $patient_ehrid_raw (@{$dbh->return_col('uuid')}) {
-    my $patient_ehrid   =   $patient_ehrid_raw->[0];
+sub new ($class, %args) {
+    my $self = {};
+    $self->{template_path} = $args{template_path};
+    $self->{dbh} = $args{dbh};
+    $self->{ehr_helper} = EHRHelper->new($self->{template_path}, $self->{dbh}, 1, $ehrbase);
 
-    my $patient = $dbh->return_row(
-        'uuid',
-        $patient_ehrid
-    );
-
-    foreach my $validation_check_key (qw(name birth_date birth_date_string name_search gender location nhsnumber)) {
-        if (!defined($patient->{$validation_check_key})) {
-            say STDERR "WARNING: $patient_ehrid has NULL $validation_check_key";
-        }
-    }
-
-    my $patient_name        =   $patient->{'name'};
-    my $patient_nhsnumber   =   $patient->{'nhsnumber'};
-    my $res                 =   $ehrclient->check_ehr_exists($patient_nhsnumber);
-
-    if ($res->{code} != 200) {
-        my $create_record = $ehrclient->create_ehr(
-            $patient_ehrid,
-            $patient_name,
-            $patient_nhsnumber
-        );
-
-        if ($create_record->{code} != 204)  {
-            die "Failure creating patient!";
-        }
-    }
-
-    say "Patient " 
-        . $patient_ehrid
-        . ' linked with: '
-        . $patient_nhsnumber
-        . ' '
-        . $patient_name;
+    bless $self, $class;
 }
 
 # Yeah I know but it's easier ok
-sub store_composition($patient_uuid, $composition) {
-    $ehrbase->store_composition($patient_uuid, $composition);
+sub store_composition($self, $patient_uuid, $composition) {
+    $self->{ehr_helper}->store_composition($patient_uuid, $composition);
 }
 
-sub compose_assessments($patient_uuid, @extra) {
+sub compose_assessments($self, $patient_uuid, @extra) {
     # Put a draft assesment in @extra. You can do multiple I suppose.
 
     my $composed = {};
 
-    for my $composition (@extra, $ehrclient->get_compositions($patient_uuid)) {
+    for my $composition (@extra, $self->{ehr_helper}->get_compositions($patient_uuid)) {
         if ($composition->{denwis}) {
             if (not $composed->{denwis}) {
                 # Shallow copy for when we add trend to it later
@@ -147,8 +88,7 @@ sub compose_assessments($patient_uuid, @extra) {
     return $composed;
 }
 
-sub summarise_composed_assessment {
-    my $composed = shift;
+sub summarise_composed_assessment($self, $composed) {
     my $summary = {};
 
     if ($composed->{denwis}) {
@@ -196,9 +136,8 @@ sub summarise_composed_assessment {
     return $summary;
 }
 
-sub fill_in_scores {
+sub fill_in_scores($self, $assessment) {
     # just adds total_scores or whatever to the assessment
-    my $assessment = shift;
 
     if ($assessment->{denwis}) {
         $assessment->{denwis}->{total_score} = (int rand 20) + 1;
