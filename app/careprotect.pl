@@ -36,14 +36,6 @@ plugin "OAuth2" => {
     mocked => { key => 42 }
 };
 
-# TODO - TAG:waresf do we need these twice?
-plugin "SecureCORS" => {
-    'cors.origin' => '*',
-    'cors.headers' => 'Content-Type',
-    'cors.credentials' => 1,
-    'cors.methods' => 'GET,POST,PUT,DELETE'
-};
-
 helper utils => sub ($c) {
     state $utils = Utils->new(
         template_path => curfile->dirname->sibling('etc'),
@@ -265,7 +257,6 @@ post '/cdr' => sub ($c) {
     }
 };
 
-# TODO - TAG:waresf do we need these twice?
 app->plugin('SecureCORS');
 app->routes->to('cors.credentials'=>1);
 app->routes->to('cors.origin' => '*');

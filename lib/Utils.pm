@@ -7,7 +7,6 @@ use Data::Dumper;
 use JSON::MaybeXS;
 use OpusVL::ACME::C19;
 use EHRHelper;
-use Path::Tiny;
 
 my $api_hostname            =   $ENV{FRONTEND_HOSTNAME} or die "set FRONTEND_HOSTNAME";
 my ($api_hostname_cookie)   =   $ENV{FRONTEND_HOSTNAME} =~ m/^.*?(\..*)$/;
