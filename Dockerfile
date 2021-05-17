@@ -6,6 +6,9 @@ RUN apt install libsqlite3-dev
 # Copy the repository over to the installation directory
 COPY . /opusvl
 
+# Create var in the opusvl installation target directory (for db etc)
+RUN mkdir /opusvl/var
+
 # Install dumbinit
 RUN cp -v /opusvl/build-asset/dumb-init_1.2.4_x86_64 /dumb-init \
     && chmod +x /dumb-init
