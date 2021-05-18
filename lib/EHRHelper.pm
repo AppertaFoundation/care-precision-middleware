@@ -490,6 +490,71 @@ sub get_compositions($self, $patient_uuid) {
 
             push @assessments, { covid => $assessment };
         }
+
+        my $denwis_node = $xml->$get_node_with_name('DENWIS');
+
+        if ($denwis_node) {
+            my $assessment = {
+                q1_breathing => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q1 Breathing" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q2_circulation => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q2 Circulation" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q3_temperature => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q3 Temperature" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q4_mentation => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q4 Mentation" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q5_agitation => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q5 Agitation" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q6_pain => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q6 Pain" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q7_trajectory => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q7 Trajectory" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q8_patient_subjective => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "Q8 Patient subjective" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q9_nurse_subjective => {
+                    pairmap { $a => $denwis_node->$dig_into_xml_for({ name => "q9_nurse_subjective" }, $b) }
+                        ordinal => '> value > value',
+                        value   => '> symbol > value',
+                        code    => 'code_string',
+                },
+                q_10_other_comment => $denwis_node->$dig_into_xml_for({ name => "Q 10 Other comment" }, 'value > value'),
+                total_score => $denwis_node->$dig_into_xml_for({ name => "Total score" }, 'magnitude'),
+            };
+
+            push @assessments, $assessment;
+        }
     }
 
     return @assessments;
