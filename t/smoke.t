@@ -37,9 +37,18 @@ $news2->{assessment}->{news2}->{news2_score} = $news2_draft->{news2}->{score};
 $app->post_ok('/c19-alpha/0.0.1/cdr' => json => $news2)
     ->status_is(204);
 
+# There are three shapes of covid data but I can't remember why so I'm just
+# doing one of them to check it works
+my $covid = decode_json(curfile->dirname->child('etc/covid-a.json')->slurp);
+$covid->{header}->{uuid} = $patients->[2]->{uuid};
+
+$app->post_ok('/c19-alpha/0.0.1/cdr' => json => $covid)
+    ->status_is(204);
+
 $app->get_ok('/c19-alpha/0.0.1/meta/demographics/patient_list?search_key=uuid&search_value=' . $patients->[0]->{uuid})
     ->json_has('/0/assessment/denwis')
     ->json_has('/1/assessment/news2')
+    ->json_has('/2/assessment/covid')
     ->tx->res->json;
 
 done_testing;
