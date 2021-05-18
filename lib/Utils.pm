@@ -12,8 +12,7 @@ my $ehrbase = $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
 
 say STDERR "ehrbase URI: $ehrbase";
 
-# news/db module started in LOUD mode, remove '1' to disable
-my $news2_calculator = OpusVL::ACME::C19->new(1);
+my $news2_calculator = OpusVL::ACME::C19->new(!! $ENV{DEBUG});
 
 # Make sure ehrbase is synced with our patients
 sub new ($class, %args) {
