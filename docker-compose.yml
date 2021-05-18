@@ -1,0 +1,65 @@
+version: '3.2'
+
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-registry.deploy.opusvl.net/careprotect/care-protect-ui}:${FRONTEND_IMAGE_VERSION:-latest}
+    environment:
+      REACT_APP_STATIC_COVID: ${REACT_APP_STATIC_COVID:-false}
+      REACT_APP_STATIC: ${REACT_APP_STATIC:-false}
+      REACT_APP_API: ${REACT_APP_API:-http://localhost}
+      REACT_APP_STATIC_COVID_CONTROL: ${REACT_APP_STATIC_COVID_CONTROL:-false}
+    ports:
+      - "40080:80"
+    depends_on:
+      - middleware
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "curl", "http://localhost" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+
+  middleware:
+    image: mojo-middleware:latest
+    ports:
+      - "40081:3000"
+    depends_on:
+      - ehrbase
+    environment:
+      FRONTEND_HOSTNAME: ${FRONTEND_HOSTNAME:-localhost}
+      EHRBASE_URI: ${EHRBASE_URI:-http://ehrbase:8080}
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "curl", "http://localhost:18080" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+
+  ehrbase:
+    image: ehrbase/ehrbase:next
+    ports:
+      - "40082:8080"
+    environment:
+      DB_URL: jdbc:postgresql://ehrdb/ehrbase
+      DB_USER: ${EHRBASE_USER:-ehrbase}
+      DB_PASSWORD: ${EHRBASE_PASSWORD?REQUIRED}
+    restart: unless-stopped
+    depends_on:
+      - ehrdb
+
+  ehrdb:
+    image: registry.deploy.opusvl.net/careprotect/ehrbase-postgres:11.11
+    environment:
+      EHRBASE_USER: ${EHRBASE_USER:-ehrbase}
+      EHRBASE_PASSWORD: ${EHRBASE_PASSWORD?REQUIRED}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?REQUIRED}
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-d", "ehrbase" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+    volumes:
+      - ${CONTAINER_VOLUME?REQUIRED}/${SERIAL?REQUIRED}/postgres:/var/lib/postgresql/pgdata
+

@@ -1,48 +1,32 @@
 FROM perl:5.30
 
+# Install OS level deps
 RUN apt install libsqlite3-dev
 
-RUN cpanm -n \
-    Cookie::Baker \
-    Data::Dumper \
-    Data::UUID \
-    DateTime \
-    DBD::SQLite \
-    File::Slurp \
-    HTTP::Cookies \
-    HTTP::Request::Common \
-    HTTP::Status \
-    JSON::MaybeXS \
-    JSON::Pointer \
-    Mojo::UserAgent \
-    Mojo::DOM \
-    Mojo::DOM::Role::PrettyPrinter \
-    Path::Tiny \
-    POE \
-    POE::Component::Client::HTTP \
-    POE::Component::Client::Keepalive \
-    POE::Component::Server::SimpleHTTP \
-    Storable Data::Search \
-    Template \
-    Test::POE::Client::TCP \
-    Try::Tiny \
-    URI \
-    URI::QueryParam \
-    LWP::UserAgent.pm 
+# Copy the repository over to the installation directory
+COPY . /opusvl
 
-COPY app /opt/C19
+# Create var in the opusvl installation target directory (for db etc)
+RUN mkdir -p /opusvl/var
 
-COPY build-asset/dumb-init_1.2.4_x86_64 /dumb-init
-COPY build-asset/OpusVL-ACME-C19-0.001.tar.gz /root/OpusVL-ACME-C19-0.001.tar.gz
-RUN cpanm /root/OpusVL-ACME-C19-0.001.tar.gz
+# Install dumbinit
+RUN cp -v /opusvl/build-asset/dumb-init_1.2.4_x86_64 /dumb-init \
+    && chmod +x /dumb-init
 
-RUN chmod +x /dumb-init
+# Swap to the workdir
+WORKDIR /opusvl
+
+# Tidy up a few things we do not want
+RUN rm -Rf local .git old 
+
+# Load in carton and any special 3rd party modules
+RUN cpanm /opusvl/build-asset/OpusVL-ACME-C19-0.001.tar.gz
+RUN cpanm --from "/opusvl/vendor/cache" --notest Carton
 
 # FIXME, server.pl expects patients.json in PWD
-RUN ln -s /opt/C19/full-template.xml /full-template.xml
+RUN ln -s /opusvl/app/full-template.xml /full-template.xml
 
-WORKDIR /opt/C19
+# Use Carton to install the required dependancies on the target container
+RUN carton install --cached --deployment
 
-EXPOSE 18080
-
-CMD [ "/dumb-init", "perl", "server.pl" ]
+CMD [ "/dumb-init", "perl", "-I/opusvl/local/lib/perl5", "/opusvl/app/careprotect.pl", "daemon" ]
