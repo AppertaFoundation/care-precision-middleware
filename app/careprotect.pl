@@ -222,7 +222,7 @@ post '/cdr' => sub ($c) {
     }
 
     my $xml_transformation = sub {
-        my $big_href = shift->{input};
+        my $big_href = shift;
         my $tt2 = Template->new({ ENCODING => 'utf8', ABSOLUTE => 1 });
 
         $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');

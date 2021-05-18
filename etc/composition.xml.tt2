@@ -669,12 +669,12 @@
                                         <value>Clinical risk category</value>
                                     </name>
                                     <value xsi:type="DV_CODED_TEXT">
-                                        <value>[% json_path('/assessment/news2/news2_score/clinical_risk_category/value') %]</value>
+                                        <value>[% json_path('/assessment/news2/news2_score/clinical_risk_category/label') %]</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>[% json_path('/assessment/news2/news2_score/clinical_risk_category/code') %]</code_string>
+                                            <code_string>[% json_path('/assessment/news2/news2_score/clinical_risk_category/value') %]</code_string>
                                         </defining_code>
                                     </value>
                                 </items>
@@ -788,7 +788,7 @@
                                     <value>Q4 Mentation</value>
                                 </name>
                                 <value xsi:type="DV_ORDINAL">
-                                    <value>[% json_path('/assessment/denwis/q4_mentation/oridnal') %]</value>
+                                    <value>[% json_path('/assessment/denwis/q4_mentation/ordinal') %]</value>
                                     <symbol>
                                         <value>[% json_path('/assessment/denwis/q4_mentation/value') %]</value>
                                         <defining_code>
