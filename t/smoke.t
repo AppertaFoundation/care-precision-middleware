@@ -34,8 +34,6 @@ my $news2_draft = $app->post_ok('/c19-alpha/0.0.1/cdr/draft' => json => $news2)
 
 $news2->{assessment}->{news2}->{news2_score} = $news2_draft->{news2}->{score};
 
-diag Dumper $news2;
-
 $app->post_ok('/c19-alpha/0.0.1/cdr' => json => $news2)
     ->status_is(204);
 
