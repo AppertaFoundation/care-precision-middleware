@@ -22,6 +22,8 @@ use HTTP::Status;
 use HTTP::Cookies;
 use LWP::UserAgent;
 use Path::Tiny;
+use List::Util qw(pairmap);
+use Encode;
 
 # Some JSON hackery
 use JSON::MaybeXS ':all';
@@ -497,10 +499,10 @@ sub store_composition($self, $patient_uuid, $composition) {
     my $req_url = $self->{ehrbase} . "/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
 
     my $request = POST(
-        $req_url, {
-            'Content-Type'  =>  'application/xml',
-            Accept          =>  '*/*'
-        } => encode_utf8($composition)
+        $req_url,
+        'Content-Type'  =>  'application/xml',
+        Accept          =>  '*/*',
+        Content => encode_utf8($composition)
     );
     my $response = $self->{agent}->request($request);
 

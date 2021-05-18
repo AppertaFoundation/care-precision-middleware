@@ -8,7 +8,6 @@ use DBHelper;
 
 use Data::UUID;
 use DateTime;
-use Encode;
 use File::Temp qw(tempfile);
 use JSON::Pointer;
 use List::Gather;
@@ -48,9 +47,9 @@ helper dbh => sub {
 };
 
 helper search => sub ($c, $search_spec) {
+    # FIXME: this is ripped from the POE thing and needs to use SQL to search
+    # and sort
     my $search_result   =   [];
-
-    # Filter
 
     # Sort
     if ($search_spec->{sort}->{enabled}) {
@@ -104,7 +103,6 @@ helper search => sub ($c, $search_spec) {
     }
 
     if (@$search_result) {
-        say STDERR "Compatability function in use for birth_date, at line: ".__LINE__;
         map {
             $_->{birthDate} = $_->{birth_date}; 
             $_->{birthDateAsString} = $_->{birth_date_string};
@@ -180,6 +178,10 @@ get '/meta/demographics/patient_list' => sub ($c) {
     };
     my $result = $c->search($search_spec);
 
+    for (@$result) {
+        $_->{assessment} = $c->utils->summarise_composed_assessment( $c->utils->compose_assessments( $_->{uuid} ) );
+    }
+
     $c->render(json => $result);
 };
 
@@ -208,28 +210,27 @@ post '/cdr' => sub ($c) {
     my $patient_uuid = $passed_composition->{header}->{uuid} ? uc($passed_composition->{header}->{uuid}) : undef;
 
     if ( not defined $patient_uuid ) {
-        $c->status(400);
+        $c->res->code(400);
         $c->render( json => { error => "UUID missing from header" } );
         return;
     }
 
     if (! $c->dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
-        $c->status(500);
+        $c->res->code(500);
         $c->render( json => { error => "Supplied UUID ($patient_uuid) was not present in local ehr db" } );
         return;
     }
 
-    # Create a place to put everything we need for ease and clarity
-
     my $xml_transformation = sub {
         my $big_href = shift->{input};
-        my $tt2 = Template->new({ ENCODING => 'utf8' });
+        my $tt2 = Template->new({ ENCODING => 'utf8', ABSOLUTE => 1 });
 
         $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
         my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
+        my $xml_tt = curfile->dirname->sibling('etc/composition.xml.tt2')->to_abs->to_string;
 
-        $tt2->process('composition.xml.tt2', {
+        $tt2->process($xml_tt, {
             json_path => $json_path,
             generate_uuid => sub { $uuid->to_string($uuid->create) } },
         \my $xml) or die $tt2->error;
@@ -243,16 +244,17 @@ post '/cdr' => sub ($c) {
     if ($ENV{DEBUG}) {
         my ($fh, $fn) = tempfile;
         binmode $fh, ':utf8';
-        print $fh $xml_transformation;
+        print $fh $xml_composition;
         say STDERR "Composition XML is in $fn";
     }
 
     try {
         $c->utils->store_composition($patient_uuid, $xml_composition);
-        $c->status(204);
+        $c->res->code(204);
+        $c->render(json => undef);
     }
     catch {
-        $c->status(500);
+        $c->res->code(500);
         $c->render(json => { error => $_ });
     }
 };
