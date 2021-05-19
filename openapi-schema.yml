@@ -158,10 +158,8 @@ components:
           type: string
           format: date
           description: Patient's date of birth
-        situation:
-          $ref: "#/components/schemas/Situation"
-        background:
-          $ref: "#/components/schemas/Background"
+        measurements:
+          $ref: "#/components/schemas/Measurements"
         identifier:
           $ref: "#/components/schemas/Identifier"
       required:
