@@ -116,6 +116,27 @@ components:
           description: Patient's NHS number
       required:
         - id
+    Measurements:
+      description: Current data about a patient's variable measurements and indicators
+      properties:
+        soft_signs:
+          description: Array of free-text strings describing informal signs of issues
+          type: array
+          items:
+            type: string
+        frailty:
+          description: Array of values from a pre-defined set
+          properties:
+            code:
+              $ref: '#/components/schemas/at_code'
+            value:
+              type: string
+        height:
+          description: Patient's height in centimetres
+          type: number
+        weight:
+          description: Patient's weight in kilograms
+          type: number
     Patient:
       properties:
         location:
@@ -137,6 +158,10 @@ components:
           type: string
           format: date
           description: Patient's date of birth
+        situation:
+          $ref: "#/components/schemas/Situation"
+        background:
+          $ref: "#/components/schemas/Background"
         identifier:
           $ref: "#/components/schemas/Identifier"
       required:
