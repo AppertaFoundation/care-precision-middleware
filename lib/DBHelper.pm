@@ -214,6 +214,13 @@ sub return_row($self,$col_name,$col_value) {
     }
 }
 
+sub return_row_undef($self,$col_name,$col_value) {
+    my $row_fetch = $self->return_row($col_name,$col_value);
+    my $col_count = 0+(keys %{$row_fetch});
+    if ($col_count == 0) { return undef }
+    else { return $row_fetch }
+}
+
 sub search_match($self,$search_key,$search_value) {
     my $sql_str =   "SELECT uuid FROM patient WHERE $search_key = ? LIMIT 1";
 
