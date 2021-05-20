@@ -12,10 +12,16 @@ $ENV{FRONTEND_HOSTNAME} = 'localhost';
 my $app = Test::Mojo->new(curfile->dirname->sibling('app/careprotect.pl'));
 
 # Retrieve the patient list and check for the presence of Elsie Mills-Samson
-my $patients = $app->get_ok('/c19-alpha/0.0.1/meta/demographics/patient_list')
+my $patients = $app->get_ok('/v1/patients')
     ->status_is(200)
     ->json_is('/0/name' => 'Mrs Elsie Mills-Samson', "Expected first patient is first")
     ->tx->res->json;
+
+$app->get_ok('/v1/patient/' . $patients->[0]->{id})
+    ->status_is(200)
+    ->json_is($patients->[0], "Returns the single patient expected");
+
+done_testing; exit;
 
 # Read in the template denwis json
 my $denwis = decode_json(curfile->dirname->child('etc/denwis.json')->slurp);

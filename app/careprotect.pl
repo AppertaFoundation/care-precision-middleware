@@ -18,8 +18,6 @@ use Try::Tiny;
 
 use Data::Dumper;
 
-my $api_prefix              =   '/c19-alpha/0.0.1';
-
 # Load JSON / UUID mnodules
 my $uuid                    =   Data::UUID->new;
 my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
@@ -46,6 +44,15 @@ helper dbh => sub {
     state $dbh = DBHelper->new( curfile->dirname->sibling('var'), 1 );
 };
 
+helper get_patient => sub ($c, $uuid) {
+    my $patient = $c->dbh->return_single_cell('uuid',uc $uuid,'uuid');
+    if (! $patient) {
+        $c->reply->not_found;
+        return;
+    }
+    return $patient;
+};
+
 helper search => sub ($c, $search_spec) {
     # FIXME: this is ripped from the POE thing and needs to use SQL to search
     # and sort
@@ -54,10 +61,9 @@ helper search => sub ($c, $search_spec) {
     # Sort
     if ($search_spec->{sort}->{enabled}) {
         foreach my $uuid_return ( $c->dbh->return_col_sorted('uuid',$search_spec->{sort})->@* ) {
-            my $userid  =
-                $uuid_return->[0];
+            my $userid = $uuid_return->[0];
 
-            my $search_db_ref   =   $c->dbh->return_row(
+            my $search_db_ref = $c->dbh->return_row(
                 'uuid',
                 $userid
             );
@@ -67,10 +73,9 @@ helper search => sub ($c, $search_spec) {
     }
     else {
         foreach my $uuid_return ( $c->dbh->return_col('uuid')->@* ) {
-            my $userid  =
-                $uuid_return->[0];
+            my $userid = $uuid_return->[0];
 
-            my $search_db_ref   =   $c->dbh->return_row(
+            my $search_db_ref = $c->dbh->return_row(
                 'uuid',
                 $userid
             );
@@ -79,27 +84,23 @@ helper search => sub ($c, $search_spec) {
         }
     }
 
-    # Search - should be restricted to what is already in search_result!
-    # at present will basically ignore sort and only return one item
-    if ($search_spec->{search}->{enabled}) {
-        # Frontend sends id, when it should send uuid
-        $search_spec->{search}->{key} = 'uuid'
-            if $search_spec->{search}->{key} eq 'id';
+    # Frontend sends id, when it should send uuid
+    $search_spec->{search}->{key} = 'uuid'
+        if $search_spec->{search}->{key} eq 'id';
 
-        my $search_key = $search_spec->{search}->{key};
+    my $search_key = $search_spec->{search}->{key};
 
-        my $search_value = $search_spec->{search}->{value};
+    my $search_value = $search_spec->{search}->{value};
 
-        my $search_match = $c->dbh->search_match($search_key,$search_value);
+    my $search_match = $c->dbh->search_match($search_key,$search_value);
 
-        if ($search_match) {
-            my $search_db_ref   =   $c->dbh->return_row(
-                'uuid',
-                $search_match
-            );
+    if ($search_match) {
+        my $search_db_ref   =   $c->dbh->return_row(
+            'uuid',
+            $search_match
+        );
 
-            push @{$search_result},$search_db_ref;
-        }
+        push @{$search_result},$search_db_ref;
     }
 
     if (@$search_result) {
@@ -114,11 +115,9 @@ helper search => sub ($c, $search_spec) {
     return $search_result;
 };
 
-under $api_prefix;
+under '/v1';
 
-get '/' => sub ($c) {
-    $c->render(template => 'index');
-};
+=for later
 
 get '/_/auth' => sub ($c) {
     my $get_token_args = {
@@ -138,9 +137,16 @@ get '/_/auth' => sub ($c) {
     });
 };
 
-get '/meta/demographics/patient_list' => sub ($c) {
+=cut
+
+get '/patients' => sub ($c) {
     my $params = $c->req->query_params;
-    my $search_spec = {
+    my $search_spec = {};
+
+=for later
+
+Query params have not been specified in the schema yet
+
         gather {
             if ($params->{search_key} and $params->{search_value}) {
                 take (
@@ -176,6 +182,9 @@ get '/meta/demographics/patient_list' => sub ($c) {
         };
         $search_spec->{$key}->{enabled} = $valid_check;
     };
+
+=cut
+
     my $result = $c->search($search_spec);
 
     for (@$result) {
@@ -185,41 +194,42 @@ get '/meta/demographics/patient_list' => sub ($c) {
     $c->render(json => $result);
 };
 
-post '/cdr/draft' => sub ($c) {
-    my $payload = $c->req->json;
+get '/patient/<:id>' => sub ($c) {
+    my $uuid = $c->stash('id');
+    # FIXME - this is not how you do this in real code
+    my $result = $c->search({ search => { key => 'uuid', value => $uuid } });
 
-    my $assessment = $payload->{assessment};
-    my $patient_uuid = $payload->{header}->{uuid} or return $c->reply->not_found;
+    if (! @$result) {
+        $c->reply->not_found;
+        return;
+    }
 
-    $c->dbh->return_single_cell('uuid',uc $patient_uuid,'uuid') or return $c->reply->not_found;
+    $result = $result->[0];
+
+    $result->{assessment} = $c->utils->summarise_composed_assessment(
+        $c->utils->compose_assessments( $result->{uuid} )
+    );
+
+    $c->render(json => $result);
+};
+
+post '/patient/<:id>/cdr/draft' => sub ($c) {
+    $c->openapi->valid_input or return;
+    my $assessment = $c->req->json;
+    my $patient_uuid = $c->stash('id');
 
     $assessment = $c->utils->fill_in_scores( $assessment );
     my $summarised = $c->utils->summarise_composed_assessment( $c->utils->compose_assessments ( $patient_uuid, $assessment ) );
 
-    $summarised->{situation}  = $payload->{situation};
-    $summarised->{background} = $payload->{background};
-
     $c->render( json => $summarised );
 };
 
-# get /cdr used to list templates but we don't want that now
+post '/patient/<:id>/cdr' => sub ($c) {
+    my $assessment = $c->req->json;
 
-post '/cdr' => sub ($c) {
-    my $passed_composition = $c->req->json;
+    my $patient_uuid = $c->stash('id');
 
-    my $patient_uuid = $passed_composition->{header}->{uuid} ? uc($passed_composition->{header}->{uuid}) : undef;
-
-    if ( not defined $patient_uuid ) {
-        $c->res->code(400);
-        $c->render( json => { error => "UUID missing from header" } );
-        return;
-    }
-
-    if (! $c->dbh->return_single_cell('uuid',$patient_uuid,'uuid')) {
-        $c->res->code(500);
-        $c->render( json => { error => "Supplied UUID ($patient_uuid) was not present in local ehr db" } );
-        return;
-    }
+    $c->get_patient($patient_uuid) or return;
 
     my $xml_transformation = sub {
         my $big_href = shift;
@@ -238,7 +248,7 @@ post '/cdr' => sub ($c) {
         return $xml;
     };
 
-    my $xml_composition = $xml_transformation->($passed_composition);
+    my $xml_composition = $xml_transformation->($assessment);
 
     # Write to /tmp for a log
     if ($ENV{DEBUG}) {
@@ -258,6 +268,8 @@ post '/cdr' => sub ($c) {
         $c->render(json => { error => $_ });
     }
 };
+
+plugin OpenAPI => { spec => curfile->dirname->sibling('openapi-schema.yml')->to_string };
 
 app->plugin('SecureCORS');
 app->routes->to('cors.credentials'=>1);
