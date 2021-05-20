@@ -1,41 +1,4 @@
 {
-  "header": {
-    "start_time": "2021-02-10T13:34:58.446Z",
-    "uuid": "3B917D6E-30B6-11EB-9B84-84525E058BE1",
-    "healthcare_facility": "Glen Carse Care Home",
-    "composer": {
-      "name": "RN Joyce Brown",
-      "id": {
-        "type": "NMC",
-        "id": "12342341",
-        "namespace": "uk.org.nmc"
-      }
-    }
-  },
-  "situation": {
-    "soft_signs": [
-      "Had a fall"
-    ]
-  },
-  "background": {
-    "frailty": [
-      {
-        "code": "at0008",
-        "value": "Vurnerable"
-      }
-    ],
-    "height": {
-      "magnitude": 165,
-      "unit": "cm"
-    },
-    "weight": {
-      "magnitude": 50,
-      "unit": "kg"
-    },
-    "allergies": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus mollis, augue et mollis fermentum, lectus risus commodo lorem, id congue libero augue eget sapien. In semper sollicitudin sempe",
-    "medication": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus mollis, augue et mollis fermentum, lectus risus commodo lorem, id congue libero augue eget sapien. In semper sollicitudin sempe"
-  },
-  "assessment": {
     "denwis": {
       "q1_breathing": {
         "code": "at0031",
@@ -85,5 +48,4 @@
       "q_10_other_comment": "Just off her food",
       "total_score": 3
     }
-  }
 }

@@ -8,6 +8,7 @@ servers:
 paths:
   /patients:
     get:
+      operationId: getPatients
       summary: Returns a list of patients.
       responses:
         '200':
@@ -22,6 +23,7 @@ paths:
                     - $ref: "#/components/schemas/AssessmentSummary"
   /patient/{id}:
     get:
+      operationId: getSinglePatient
       summary: Get a single patient by ID (see Identifier)
       parameters:
         - in: path
@@ -43,6 +45,7 @@ paths:
 
   /patient/{id}/cdr/draft:
     post:
+      operationId: postDraft
       summary: Send an assessment to see whether it looks right.
       parameters:
         - in: path
@@ -68,6 +71,7 @@ paths:
 
   /patient/{id}/cdr:
     post:
+      operationId: postAssessment
       summary: Save an assessment
       parameters:
         - in: path

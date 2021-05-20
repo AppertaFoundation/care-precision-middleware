@@ -542,14 +542,17 @@
                                         <value>Respiration rate</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/respiration_rate/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/respiration_rate/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/respiration_rate/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/respiration_rate/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/respiration_rate/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/respiration_rate/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -559,14 +562,17 @@
                                         <value>SpO₂ Scale 1</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/spo_scale_1/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/spo_scale_1/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/spo_scale_1/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/spo_scale_1/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/spo_scale_1/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/spo_scale_1/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -576,14 +582,17 @@
                                         <value>Air or oxygen?</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/air_or_oxygen/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/air_or_oxygen/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/air_or_oxygen/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/air_or_oxygen/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/air_or_oxygen/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -593,14 +602,17 @@
                                         <value>Systolic blood pressure</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/systolic_blood_pressure/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/systolic_blood_pressure/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/systolic_blood_pressure/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/systolic_blood_pressure/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -610,14 +622,17 @@
                                         <value>Pulse</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/pulse/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/pulse/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/pulse/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/pulse/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/pulse/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/pulse/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -627,14 +642,17 @@
                                         <value>Consciousness</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/consciousness/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/consciousness/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/consciousness/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/consciousness/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/consciousness/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/consciousness/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -644,14 +662,17 @@
                                         <value>Temperature</value>
                                     </name>
                                     <value xsi:type="DV_ORDINAL">
-                                        <value>[% json_path('/assessment/news2/news2_score/temperature/ordinal') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/temperature/ordinal') %]</value>
                                         <symbol>
-                                            <value>[% json_path('/assessment/news2/news2_score/temperature/value') %]</value>
+                                            <value>[%
+                                            json_path('/assessment/news2/score/temperature/value') %]</value>
                                             <defining_code>
                                                 <terminology_id>
                                                     <value>local</value>
                                                 </terminology_id>
-                                                <code_string>[% json_path('/assessment/news2/news2_score/temperature/code') %]</code_string>
+                                                <code_string>[%
+                                                json_path('/assessment/news2/score/temperature/code') %]</code_string>
                                             </defining_code>
                                         </symbol>
                                     </value>
@@ -661,7 +682,8 @@
                                         <value>Total score</value>
                                     </name>
                                     <value xsi:type="DV_COUNT">
-                                        <magnitude>[% json_path('/assessment/news2/news2_score/total_score') %]</magnitude>
+                                        <magnitude>[%
+                                        json_path('/assessment/news2/score/total_score') %]</magnitude>
                                     </value>
                                 </items>
                                 <items xsi:type="ELEMENT" archetype_node_id="at0056">
@@ -669,12 +691,14 @@
                                         <value>Clinical risk category</value>
                                     </name>
                                     <value xsi:type="DV_CODED_TEXT">
-                                        <value>[% json_path('/assessment/news2/news2_score/clinical_risk_category/label') %]</value>
+                                        <value>[%
+                                        json_path('/assessment/news2/score/clinical_risk_category/label') %]</value>
                                         <defining_code>
                                             <terminology_id>
                                                 <value>local</value>
                                             </terminology_id>
-                                            <code_string>[% json_path('/assessment/news2/news2_score/clinical_risk_category/value') %]</code_string>
+                                            <code_string>[%
+                                            json_path('/assessment/news2/score/clinical_risk_category/value') %]</code_string>
                                         </defining_code>
                                     </value>
                                 </items>

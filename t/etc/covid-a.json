@@ -1,60 +1,22 @@
 {
-    "header": {
-        "start_time": "2021-03-01T14:55:22.706Z",
-        "uuid": "5F7C7670-419B-40E6-9596-AC39D670BF15",
-        "healthcare_facility": "Glen Carse Care Home",
-        "composer": {
-            "name": "RN Joyce Brown",
-            "id": {
-                "type": "NMC",
-                "id": "12342341",
-                "namespace": "uk.org.nmc"
-            }
-        }
-    },
-    "situation": {
-        "soft_signs": [
-            "Reduced mobility/coordination",
-            "Just not themselves",
-            "Had a fall"
-        ]
-    },
-    "background": {
-        "frailty": [
-            {
-                "code": "at0006",
-                "value": "Well"
-            }
-        ],
-        "height": {
-            "magnitude": 165,
-            "unit": "cm"
+   "covid":{
+     "date_of_onset_of_first_symptoms":"2021-03-18T00:00:00.000Z",
+     "specific_symptom_sign":[
+        {
+           "value":"Nausea and vomiting",
+           "code":"16932000",
+           "terminology":"SNOMED-CT"
         },
-        "weight": {
-            "magnitude": 20,
-            "unit": "kg"
+        {
+           "value":"Joint pain",
+           "code":"57676002",
+           "terminology":"SNOMED-CT"
+        },
+        {
+           "value":"Chest pain",
+           "code":"29857009",
+           "terminology":"SNOMED-CT"
         }
-    },
-    "assessment": {
-       "covid":{
-         "date_of_onset_of_first_symptoms":"2021-03-18T00:00:00.000Z",
-         "specific_symptom_sign":[
-            {
-               "value":"Nausea and vomiting",
-               "code":"16932000",
-               "terminology":"SNOMED-CT"
-            },
-            {
-               "value":"Joint pain",
-               "code":"57676002",
-               "terminology":"SNOMED-CT"
-            },
-            {
-               "value":"Chest pain",
-               "code":"29857009",
-               "terminology":"SNOMED-CT"
-            }
-         ]
-      }
-    }
+     ]
+  }
 }

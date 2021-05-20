@@ -57,7 +57,7 @@ sub init_ehrbase($self) {
                 last;
             }
             else {
-                say STDERR "Critical error uploading template! " . $response->{content};
+                say STDERR "Critical error uploading template! " . $response->{code};
                 die;
             }
         }
@@ -199,14 +199,14 @@ sub check_ehr_exists($self,$nhs) {
 }
 
 sub send_template($self,$template) {
-    my $ehrbase =   $self->{ehrbase};
-    my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $ehrbase = $self->{ehrbase};
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
 
     my $res = $self->{agent}->post($req_url, { 'Content-Type' => 'application/xml' }, encode_utf8($template))->result;
 
     return {
-        code    =>  $res->code(),
-        content =>  undef
+        code    =>  $res->code,
+        content =>  $res->body
     };
 }
 
@@ -247,6 +247,8 @@ sub get_compositions($self, $patient_uuid) {
         my $raw_obj = $res->json;
         $raw_obj->{rows}
     };
+
+    say STDERR "No compositions: $patient_uuid" and return if not @$composition_objs;
 
     my $retrieve_composition = sub {
         my ($ehrid,$compositionid) = @_;
@@ -515,7 +517,10 @@ sub get_compositions($self, $patient_uuid) {
 sub store_composition($self, $patient_uuid, $composition) {
     my $req_url = $self->{ehrbase} . "/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
 
-    my $response = $self->{agent}->post($req_url, { 'Content-Type' => 'application/xml' }, encode_utf8($composition))->result;
+    my $response = $self->{agent}->post($req_url, {
+        'Content-Type' => 'application/xml',
+        Accept => '*/*'
+    }, encode_utf8($composition))->result;
 
     if ($response->code != 204) {
         die $response->body;

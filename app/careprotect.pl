@@ -84,38 +84,27 @@ helper search => sub ($c, $search_spec) {
         }
     }
 
-    # Frontend sends id, when it should send uuid
-    $search_spec->{search}->{key} = 'uuid'
-        if $search_spec->{search}->{key} eq 'id';
-
     my $search_key = $search_spec->{search}->{key};
 
     my $search_value = $search_spec->{search}->{value};
 
-    my $search_match = $c->dbh->search_match($search_key,$search_value);
+    if ($search_key) {
+        $search_key = 'uuid' if $search_key eq 'id';
+        my $search_match = $c->dbh->search_match($search_key,$search_value);
 
-    if ($search_match) {
-        my $search_db_ref   =   $c->dbh->return_row(
-            'uuid',
-            $search_match
-        );
+        if ($search_match) {
+            my $search_db_ref   =   $c->dbh->return_row(
+                'uuid',
+                $search_match
+            );
 
-        push @{$search_result},$search_db_ref;
-    }
-
-    if (@$search_result) {
-        map {
-            $_->{birthDate} = $_->{birth_date}; 
-            $_->{birthDateAsString} = $_->{birth_date_string};
-            $_->{id} = $_->{uuid}
-        } @{$search_result};
+            push @{$search_result},$search_db_ref;
+        }
     }
 
     # If no pagination just return whatever survived the run
     return $search_result;
 };
-
-under '/v1';
 
 =for later
 
@@ -188,14 +177,17 @@ Query params have not been specified in the schema yet
     my $result = $c->search($search_spec);
 
     for (@$result) {
-        $_->{assessment} = $c->utils->summarise_composed_assessment( $c->utils->compose_assessments( $_->{uuid} ) );
+        $_->{assessment} = $c->utils->summarise_composed_assessment(
+            $c->utils->compose_assessments( $_->{uuid} )
+        );
     }
 
     $c->render(json => $result);
-};
+} => 'getPatients';
 
 get '/patient/<:id>' => sub ($c) {
     my $uuid = $c->stash('id');
+
     # FIXME - this is not how you do this in real code
     my $result = $c->search({ search => { key => 'uuid', value => $uuid } });
 
@@ -211,31 +203,45 @@ get '/patient/<:id>' => sub ($c) {
     );
 
     $c->render(json => $result);
-};
+} => 'getSinglePatient';
 
 post '/patient/<:id>/cdr/draft' => sub ($c) {
     $c->openapi->valid_input or return;
+
     my $assessment = $c->req->json;
     my $patient_uuid = $c->stash('id');
 
     $assessment = $c->utils->fill_in_scores( $assessment );
-    my $summarised = $c->utils->summarise_composed_assessment( $c->utils->compose_assessments ( $patient_uuid, $assessment ) );
+
+    my $summarised = $c->utils->summarise_composed_assessment(
+        $c->utils->compose_assessments( $patient_uuid, $assessment )
+    );
 
     $c->render( json => $summarised );
-};
+} => 'postDraft';
 
 post '/patient/<:id>/cdr' => sub ($c) {
-    my $assessment = $c->req->json;
+    $c->openapi->valid_input or return;
 
+    my $assessment = $c->utils->fill_in_scores($c->req->json);
     my $patient_uuid = $c->stash('id');
 
     $c->get_patient($patient_uuid) or return;
 
+    my $composition = {
+        assessment => $assessment,
+        header     => {
+            start_time => DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ'),
+            composer => {
+                name => "Login McUserdata"
+            },
+            healthcare_facility => "Glen Carse Care Home"
+        }
+    };
+
     my $xml_transformation = sub {
         my $big_href = shift;
         my $tt2 = Template->new({ ENCODING => 'utf8', ABSOLUTE => 1 });
-
-        $big_href->{header}->{start_time} = DateTime->now->strftime('%Y-%m-%dT%H:%M:%SZ');
 
         my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
         my $xml_tt = curfile->dirname->sibling('etc/composition.xml.tt2')->to_abs->to_string;
@@ -248,7 +254,7 @@ post '/patient/<:id>/cdr' => sub ($c) {
         return $xml;
     };
 
-    my $xml_composition = $xml_transformation->($assessment);
+    my $xml_composition = $xml_transformation->($composition);
 
     # Write to /tmp for a log
     if ($ENV{DEBUG}) {
@@ -267,7 +273,7 @@ post '/patient/<:id>/cdr' => sub ($c) {
         $c->res->code(500);
         $c->render(json => { error => $_ });
     }
-};
+} => 'postAssessment';
 
 plugin OpenAPI => { spec => curfile->dirname->sibling('openapi-schema.yml')->to_string };
 
