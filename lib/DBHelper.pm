@@ -61,7 +61,7 @@ sub init_schema ($self) {
 sub init_data($self,$create_table) {
     if ($create_table == 0) {
         $self->{dbh}->do(<<'SQL');
-CREATE TABLE patient (
+CREATE VIRTUAL TABLE patient USING fts4(
     uuid string PRIMARY KEY,
     name string NOT NULL,
     birth_date number NOT NULL,
