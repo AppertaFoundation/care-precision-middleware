@@ -245,4 +245,25 @@ sub search_match($self,$search_key,$search_value) {
     }
 }
 
+sub find_user($self,$term,@hints) {
+    # A $term will be searched on as a 'must be present'
+
+    # Hints is not presently used! TODO -----------------
+    # Hints will be used to apply to the resultant search response as a secondary filter
+    # ordering results on the weight of the amount of matched hints, if no hints 
+    # partially match then the results will be ordered a-z
+
+    my $sql_str         =   "SELECT uuid,name FROM patient WHERE name LIKE '%?%' ORDER BY name ASC";
+    my $sth             =   $self->{dbh}->prepare($sql_str);
+
+    $sth->execute(join('','%',$term,'%'));
+    my $search_return   =   $sth->fetchall_hashref('uuid');
+
+    my $row_count       =   keys %{$search_return};
+
+    if ($row_count > 0)  {
+        return $search_return;
+    }
+}
+
 1;
