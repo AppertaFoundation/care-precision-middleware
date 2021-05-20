@@ -253,7 +253,7 @@ sub find_user($self,$term,@hints) {
     # ordering results on the weight of the amount of matched hints, if no hints 
     # partially match then the results will be ordered a-z
 
-    my $sql_str         =   "SELECT uuid,name FROM patient WHERE name LIKE '%?%' ORDER BY name ASC";
+    my $sql_str         =   "SELECT uuid,name FROM patient WHERE name LIKE ? ORDER BY name ASC";
     my $sth             =   $self->{dbh}->prepare($sql_str);
 
     $sth->execute(join('','%',$term,'%'));
