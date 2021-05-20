@@ -135,7 +135,8 @@ sub fill_in_scores($self, $assessment) {
     # just adds total_scores or whatever to the assessment
 
     if ($assessment->{denwis}) {
-        $assessment->{denwis}->{total_score} = (int rand 20) + 1;
+        # 0 to 9
+        $assessment->{denwis}->{total_score} = (int rand 10);
     }
 
     if ($assessment->{sepsis}) {
