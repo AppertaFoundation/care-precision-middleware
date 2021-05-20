@@ -13,14 +13,7 @@ use experimental qw(signatures);
 use Carp qw(cluck longmess shortmess);
 use Data::Dumper;
 
-# Add in the HTTP modules, not mojo :)
-use URI;
-use URI::QueryParam;
-use HTTP::Request;
-use HTTP::Request::Common;
-use HTTP::Status;
-use HTTP::Cookies;
-use LWP::UserAgent;
+use Mojo::UserAgent;
 use Path::Tiny;
 use List::Util qw(pairmap);
 use Encode;
@@ -34,7 +27,7 @@ sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = 'http://localho
     if ($set_debug) { $debug = 1 }
 
     my $self = bless {
-        agent         => LWP::UserAgent->new(),
+        agent         => Mojo::UserAgent->new,
         ehrbase       => $ehrbase,
         dbh           => $dbh,
         debug         => $debug,
@@ -49,14 +42,14 @@ sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = 'http://localho
 sub init_ehrbase($self) {
     while (my $query = $self->_con_test()) {
         if ($query->{code} == 200) {
-            my $template_list = decode_json($query->{content});
+            my $template_list = $query->{content};
             if (scalar(@{$template_list}) > 0) {
                 say STDERR "Templates already detected";
                 say STDERR Dumper($template_list);
                 last;
             }
 
-            my $template_raw = Encode::encode_utf8(path($self->{template_path} . '/full-template.xml')->slurp);
+            my $template_raw = path($self->{template_path} . '/full-template.xml')->slurp;
             my $response     = $self->send_template($template_raw);
 
             if ($response->{code} == 204) {
@@ -133,21 +126,19 @@ sub _create_ehr($self) {
 }
 
 sub _con_test($self) {
-    my $ehrbase =   $self->{ehrbase};
-    my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
+    my $ehrbase = $self->{ehrbase};
+    my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
 
-    my $request =   GET(
-        $req_url,
-        'Accept' => 'application/json',
-        'Prefer' => 'return=minimal'
-    );
+    say STDERR "con test: $req_url";
+    my $res = $self->{agent}->get($req_url => {
+        'Accept' => 'application/json'
+    })->result;
 
-    my $ua  =   $self->{agent};
-    my $res =   $ua->request($request);
+    die "Did it wrong" if $res->code == 400;
 
     return  {
-        code    =>  $res->code(),
-        content =>  $res->content()
+        code    =>  $res->code,
+        content =>  $res->json,
     };
 }
 
@@ -161,26 +152,13 @@ sub create_ehr($self,$uuid,$name,$nhsnumber) {
     $create_ehr_script->{subject}->{external_ref}->{id}->{value}
         =   $nhsnumber;
 
-    my $json_script         =   encode_json($create_ehr_script);
-
-    say STDERR "Creation script: $json_script";
-    say STDERR "URL: $req_url";
-
-    my $request = PUT(
-        $req_url,
-        'Accept'                =>  'application/json',
-        'Content-Type'          =>  'application/json',
-        'PREFER'                =>  'representation=minimal',
-        Content                 =>  $json_script
-    );
-
-    my $res = $self->{agent}->request($request);
+    my $res = $self->{agent}->put($req_url, json => $create_ehr_script)->result;
 
     if ($res->code != 204)  {
         die "Failure creating patient!\n".Dumper($res->decoded_content());
     }
 
-    my ($uuid_extract) = $res->header('ETag') =~ m/^"(.*)"$/;
+    my ($uuid_extract) = $res->headers->etag =~ m/^"(.*)"$/;
 
     return {
         code    =>  $res->code(),
@@ -194,21 +172,16 @@ sub check_ehr_exists($self,$nhs) {
     .   "?subject_id=$nhs"
     .   "&subject_namespace=EHR";
 
-    my $request = GET(
-        $req_url,
+    my $res = $self->{agent}->get($req_url => {
         'Accept'        =>  'application/json',
         'Content-Type'  =>  'application/json',
-        Content         =>  ''
-    );
- 
-    my $ua              =   $self->{agent};
-    my $res             =   $ua->request($request);
-    my $return_code     =   $res->code();
+    })->result;
+    my $return_code = $res->code;
 
     if ($return_code == 200) {
         return {
             code    =>  $return_code,
-            content =>  decode_json($res->decoded_content())
+            content =>  $res->json,
         };
     }
     elsif ($return_code == 404)   {
@@ -218,7 +191,6 @@ sub check_ehr_exists($self,$nhs) {
         };
     }
     else {
-        
         return {
             code    =>  $return_code,
             content =>  "non captured response: $req_url ($return_code)"
@@ -230,16 +202,7 @@ sub send_template($self,$template) {
     my $ehrbase =   $self->{ehrbase};
     my $req_url =   "$ehrbase/ehrbase/rest/openehr/v1/definition/template/adl1.4";
 
-    my $request =   POST(
-        $req_url,
-        'Accept'        => 'application/xml',
-        'Content-Type'  => 'application/xml',
-        'Prefer'        => 'return=minimal',
-        Content         =>  $template
-    );
-
-    my $ua  = $self->{agent};
-    my $res = $ua->request($request);
+    my $res = $self->{agent}->post($req_url, { 'Content-Type' => 'application/xml' }, encode_utf8($template))->result;
 
     return {
         code    =>  $res->code(),
@@ -270,16 +233,7 @@ sub get_compositions($self, $patient_uuid) {
             'q'    =>  "SELECT c/uid/value FROM EHR e [ehr_id/value = '$patient_uuid'] CONTAINS COMPOSITION c"
         };
 
-        my $request = POST(
-            $req_url,
-            'Accept'        =>  'application/json',
-            'Content-Type'  =>  'application/json',
-            Content         =>  encode_json($query)
-        );
-
-        my $ua = LWP::UserAgent->new();
-        my $res = $ua->request($request);
-
+        my $res = $self->{agent}->post($req_url, json => $query)->result;
         if ($res->code != 200)  {
             if ($res->code == 404) {
                 print STDERR "Patient $patient_uuid not found";
@@ -290,7 +244,7 @@ sub get_compositions($self, $patient_uuid) {
             die;
         }
 
-        my $raw_obj = decode_json($res->content());
+        my $raw_obj = $res->json;
         $raw_obj->{rows}
     };
 
@@ -307,21 +261,17 @@ sub get_compositions($self, $patient_uuid) {
         };
 
         my $ehrbase =   $self->{ehrbase};
-        my $request = GET(
-            "$ehrbase/ehrbase/rest/openehr/v1/ehr/$ehrid/composition/$compositionid",
+        my $req_url = "$ehrbase/ehrbase/rest/openehr/v1/ehr/$ehrid/composition/$compositionid";
+        my $res = $self->{agent}->get($req_url, {
             'Accept'       => 'application/xml',
             'Content-Type' => 'application/json',
-            Content        =>   encode_json($query)
-        );
-
-        my $ua = LWP::UserAgent->new();
-        my $res = $ua->request($request);
+        }, json => $query)->result;
 
         if ($res->code != 200)  {
             print STDERR "Invalid AQL query";
             die;
         }
-        $res->decoded_content();
+        $res->body;
     };
 
     my $get_node_with_name = sub ($dom, $name) {
@@ -565,16 +515,10 @@ sub get_compositions($self, $patient_uuid) {
 sub store_composition($self, $patient_uuid, $composition) {
     my $req_url = $self->{ehrbase} . "/ehrbase/rest/openehr/v1/ehr/$patient_uuid/composition";
 
-    my $request = POST(
-        $req_url,
-        'Content-Type'  =>  'application/xml',
-        Accept          =>  '*/*',
-        Content => encode_utf8($composition)
-    );
-    my $response = $self->{agent}->request($request);
+    my $response = $self->{agent}->post($req_url, { 'Content-Type' => 'application/xml' }, encode_utf8($composition))->result;
 
     if ($response->code != 204) {
-        die $response->to_string;
+        die $response->body;
     }
     return;
 }
