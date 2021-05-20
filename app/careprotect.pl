@@ -25,10 +25,10 @@ my $json                    =   JSON::MaybeXS->new(utf8 => 1)->allow_nonref(1);
 plugin "OAuth2" => {
     opus => {
         # FIXME : secret should NOT be hard coded!
-        key    => 'open-ereact-poc',
-        secret => '3debdc8d-c478-4747-b21e-046b044e2c03',
-        token_url => 'https://sso.opusvl.com/auth/realms/opusvl/protocol/openid-connect/token',
-        authorize_url => 'https://sso.opusvl.com/auth/realms/opusvl/protocol/openid-connect/auth?response_type=code',
+        key             =>  'open-ereact-poc',
+        secret          =>  '3debdc8d-c478-4747-b21e-046b044e2c03',
+        token_url       =>  'https://sso.opusvl.com/auth/realms/opusvl/protocol/openid-connect/token',
+        authorize_url   =>  'https://sso.opusvl.com/auth/realms/opusvl/protocol/openid-connect/auth?response_type=code',
     },
     mocked => { key => 42 }
 };
