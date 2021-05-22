@@ -20,6 +20,11 @@ $app->get_ok('/v1/patient/' . $patients->[0]->{uuid})
     ->status_is(200)
     ->json_is('' => $patients->[0], "Returns the single patient expected");
 
+$app->get_ok('/v1/patients?name=chris')
+    ->status_is(200)
+    ->json_has('/0', "One result found")
+    ->json_hasnt('/1', "But not two");
+
 # Read in the template denwis json
 my $denwis = decode_json(curfile->dirname->child('etc/denwis.json')->slurp);
 
@@ -27,6 +32,12 @@ my $denwis = decode_json(curfile->dirname->child('etc/denwis.json')->slurp);
 $app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $denwis, "Posting DENWIS object")
     ->status_is(204, "DENWIS posted OK")
     ->or(sub { diag Dumper $app->tx->res->json });
+
+# Validation is currently not working right
+#$denwis = { assessment => {} };
+#$app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $denwis, "Posting DENWIS object")
+#    ->status_is(400, "Invalid DENWIS failed");
+#
 
 my $news2 = decode_json(curfile->dirname->child('etc/news2-minimum-fields.json')->slurp);
 

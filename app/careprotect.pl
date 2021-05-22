@@ -38,6 +38,7 @@ helper valid_body => sub ($c) {
     my $schema = $c->openapi->spec;
 
     my $result = evaluate($c->req->json, $schema);
+    print Dumper [$c->req->json, $schema, $result];
 
     return $c if $result->{valid};
 
@@ -93,8 +94,10 @@ get '/_/auth' => sub ($c) {
 =cut
 
 get '/patients' => sub ($c) {
-    my $params = $c->req->query_params;
+    my $params = $c->req->query_params->to_hash;
     my $search_spec = {};
+
+    print STDERR Dumper $params;
 
     if (my $sort_key = $params->{sort_key}) {
         my $sort_dir = $params->{sort_dir} // 'asc';

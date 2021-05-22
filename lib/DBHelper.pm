@@ -248,6 +248,7 @@ sub search_match($self,$search_key,$search_value) {
 sub get_patient($self, $uuid) {
     $self->find_patients({ uuid => $uuid })->[0]
 }
+    use Data::Dumper;
 
 sub find_patients($self, $search) {
     my $sqla = SQL::Abstract->new;
@@ -265,7 +266,7 @@ sub find_patients($self, $search) {
 
     # if $search contains a name key it is considered a case-insensitive substring search
     if (my $name = delete $search->{name}) {
-        $where->{name} = { -ilike => $name };
+        $where->{name} = { -like => "%$name%" };
     }
 
     # all other keys are literal
