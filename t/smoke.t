@@ -14,7 +14,6 @@ my $app = Test::Mojo->new(curfile->dirname->sibling('app/careprotect.pl'));
 # Retrieve the patient list and check for the presence of Elsie Mills-Samson
 my $patients = $app->get_ok('/v1/patients')
     ->status_is(200)
-    ->json_is('/0/name' => 'Mrs Elsie Mills-Samson', "Expected first patient is first")
     ->tx->res->json;
 
 $app->get_ok('/v1/patient/' . $patients->[0]->{uuid})

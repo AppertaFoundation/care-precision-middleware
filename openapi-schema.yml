@@ -10,6 +10,45 @@ paths:
     get:
       operationId: getPatients
       summary: Returns a list of patients.
+      parameters:
+        - in: query
+          name: sort_key
+          schema:
+            type: string
+            enum: [ "uuid", "name", "birth_date" ]
+          description: The key to sort results by.
+        - in: query
+          name: sort_dir
+          schema:
+            type: string
+            enum: [ "asc", "desc" ]
+          description: The direction to sort, default asc
+        - in: query
+          name: location
+          schema:
+            type: string
+            enum: [ "Bedroom" ]
+          description: Show only patients in the given location. In a full system this would have more options.
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: This value is used for a substring search on patients' names
+        - in: query
+          name: birth_date
+          schema:
+            type: string
+          description: A date, optionally followed by gt, gte, lt, or lte, and separated by a colon.
+          examples:
+            exact:
+              value: 2001-01-01
+              summary: Returns everyone born on this date
+            gt:
+              value: 2001-01-01:gt
+              summary: Returns everyone born after this date
+            gte:
+              value: 2001-01-01:gte
+              summary: Returns everyone born on or after this date
       responses:
         '200':
           description: An array of Patient objects with an AssessmentSummary in each

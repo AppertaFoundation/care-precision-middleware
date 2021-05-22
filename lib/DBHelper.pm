@@ -10,10 +10,10 @@ use experimental qw(signatures);
 
 # Debug/Reporting modules
 use Carp qw(cluck longmess shortmess);
-use Data::Dumper;
 
 # We need SQLite as well
 use DBI;
+use SQL::Abstract;
 
 # Primary code block
 sub new($class, $db_path, $set_debug = 0) {
@@ -243,6 +243,37 @@ sub search_match($self,$search_key,$search_value) {
         say STDERR "WARNING: Returning undef to search_match";
         return undef;
     }
+}
+
+sub get_patient($self, $uuid) {
+    $self->find_patients({ uuid => $uuid })->[0]
+}
+
+sub find_patients($self, $search) {
+    my $sqla = SQL::Abstract->new;
+
+    # if $search contains an order key it should be asc => col or desc => col
+    my $order = do {
+        my $dir = $search->{order}->{direction} // 'asc';
+        my $col = $search->{order}->{column} // 'name';
+        delete $search->{order};
+
+        {  "-$dir" => $col };
+    };
+
+    my $where = {};
+
+    # if $search contains a name key it is considered a case-insensitive substring search
+    if (my $name = delete $search->{name}) {
+        $where->{name} = { -ilike => $name };
+    }
+
+    # all other keys are literal
+    $where->{$_} = $search->{$_} for keys %$search;
+
+    my ($stmt, @bind) = $sqla->select('patient', '*', $where, $order);
+
+    return $self->{dbh}->selectall_arrayref($stmt, { Slice => {} }, @bind);
 }
 
 sub find_user($self,$term,@hints) {

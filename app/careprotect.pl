@@ -15,6 +15,7 @@ use Mojo::UserAgent;
 use Mojo::File qw(curfile);
 use Template;
 use Try::Tiny;
+use JSON::Schema::Tiny qw(evaluate);
 
 use Data::Dumper;
 
@@ -33,6 +34,18 @@ plugin "OAuth2" => {
     mocked => { key => 42 }
 };
 
+helper valid_body => sub ($c) {
+    my $schema = $c->openapi->spec;
+
+    my $result = evaluate($c->req->json, $schema);
+
+    return $c if $result->{valid};
+
+    $c->res->code(400);
+    $c->render(openapi => $result);
+    return;
+};
+
 helper utils => sub ($c) {
     state $utils = Utils->new(
         template_path => curfile->dirname->sibling('etc'),
@@ -45,7 +58,7 @@ helper dbh => sub {
 };
 
 helper get_patient => sub ($c, $uuid) {
-    my $patient = $c->dbh->return_single_cell('uuid',uc $uuid,'uuid');
+    my $patient = $c->dbh->get_patient($uuid);
     if (! $patient) {
         $c->reply->not_found;
         return;
@@ -54,56 +67,7 @@ helper get_patient => sub ($c, $uuid) {
 };
 
 helper search => sub ($c, $search_spec) {
-    # FIXME: this is ripped from the POE thing and needs to use SQL to search
-    # and sort
-    my $search_result   =   [];
-
-    # Sort
-    if ($search_spec->{sort}->{enabled}) {
-        foreach my $uuid_return ( $c->dbh->return_col_sorted('uuid',$search_spec->{sort})->@* ) {
-            my $userid = $uuid_return->[0];
-
-            my $search_db_ref = $c->dbh->return_row(
-                'uuid',
-                $userid
-            );
-
-            push @{$search_result},$search_db_ref;
-        }
-    }
-    else {
-        foreach my $uuid_return ( $c->dbh->return_col('uuid')->@* ) {
-            my $userid = $uuid_return->[0];
-
-            my $search_db_ref = $c->dbh->return_row(
-                'uuid',
-                $userid
-            );
-
-            push @{$search_result},$search_db_ref;
-        }
-    }
-
-    my $search_key = $search_spec->{search}->{key};
-
-    my $search_value = $search_spec->{search}->{value};
-
-    if ($search_key) {
-        $search_key = 'uuid' if $search_key eq 'id';
-        my $search_match = $c->dbh->search_match($search_key,$search_value);
-
-        if ($search_match) {
-            my $search_db_ref   =   $c->dbh->return_row(
-                'uuid',
-                $search_match
-            );
-
-            push @{$search_result},$search_db_ref;
-        }
-    }
-
-    # If no pagination just return whatever survived the run
-    return $search_result;
+    $c->dbh->find_patients($search_spec);
 };
 
 =for later
@@ -132,48 +96,32 @@ get '/patients' => sub ($c) {
     my $params = $c->req->query_params;
     my $search_spec = {};
 
-=for later
+    if (my $sort_key = $params->{sort_key}) {
+        my $sort_dir = $params->{sort_dir} // 'asc';
+        $search_spec->{sort} = { $sort_dir => $sort_key }
+    }
 
-Query params have not been specified in the schema yet
+    if ($params->{name}) {
+        $search_spec->{name} = $params->{name};
+    }
 
-        gather {
-            if ($params->{search_key} and $params->{search_value}) {
-                take (
-                    search => {
-                        key   => $params->{'search_key'},
-                        value => $params->{'search_value'}
-                    },
-                )
-            }
+    if ($params->{birth_date}) {
+        my ($date, $op) = split /:/, $params->{birth_date};
 
-            if ($params->{sort_key} and $params->{sort_value}) {
-                take (
-                    sort => {
-                        key   => $params->{'sort_key'},
-                        value => $params->{'sort_value'}
-                    },
-                )
-            }
+        if ($op) {
+            my $real_op = {
+                gt => '>',
+                gte => '>=',
+                lt => '<',
+                lte => '<='
+            }->{$op};
+
+            $search_spec->{birth_date} = { $real_op => $date };
         }
-    };
-
-    # Add in fast checks
-    foreach my $key (keys %{$search_spec}) {
-        my $valid_check = do {
-            my $values_valid = 1;
-            foreach my $subkey (keys %{$search_spec->{$key}}) {
-                if (!defined $search_spec->{$key}->{$subkey}) {
-                    $values_valid = 0;
-                }
-                last;
-            }
-            $values_valid
-        };
-        $search_spec->{$key}->{enabled} = $valid_check;
-    };
-
-=cut
-
+        else {
+            $search_spec->{birth_date} = $date
+        }
+    }
     my $result = $c->search($search_spec);
 
     for (@$result) {
@@ -189,7 +137,7 @@ get '/patient/<:id>' => sub ($c) {
     my $uuid = $c->stash('id');
 
     # FIXME - this is not how you do this in real code
-    my $result = $c->search({ search => { key => 'uuid', value => $uuid } });
+    my $result = $c->search({ uuid => $uuid });
 
     if (! @$result) {
         $c->reply->not_found;
@@ -206,7 +154,7 @@ get '/patient/<:id>' => sub ($c) {
 } => 'getSinglePatient';
 
 post '/patient/<:id>/cdr/draft' => sub ($c) {
-    $c->openapi->valid_input or return;
+    $c->valid_body or return;
 
     my $assessment = $c->req->json;
     my $patient_uuid = $c->stash('id');
@@ -221,7 +169,7 @@ post '/patient/<:id>/cdr/draft' => sub ($c) {
 } => 'postDraft';
 
 post '/patient/<:id>/cdr' => sub ($c) {
-    $c->openapi->valid_input or return;
+    $c->valid_body or return;
 
     my $assessment = $c->utils->fill_in_scores($c->req->json);
     my $patient_uuid = $c->stash('id');
