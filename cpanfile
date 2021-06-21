@@ -18,3 +18,4 @@ requires 'JSON::MaybeXS';
 requires 'Path::Tiny';
 requires 'List::Gather';
 requires 'SQL::Abstract';
+requires 'HTTP::Request';
