@@ -19,3 +19,4 @@ requires 'Path::Tiny';
 requires 'List::Gather';
 requires 'SQL::Abstract';
 requires 'HTTP::Request';
+requires 'Mojolicious::Plugin::OpenAPI';

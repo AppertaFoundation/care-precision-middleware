@@ -1070,6 +1070,21 @@ DISTRIBUTIONS
       perl 5.006
       strict 0
       warnings 0
+  HTTP-Cookies-6.10
+    pathname: O/OA/OALDERS/HTTP-Cookies-6.10.tar.gz
+    provides:
+      HTTP::Cookies 6.10
+      HTTP::Cookies::Microsoft 6.10
+      HTTP::Cookies::Netscape 6.10
+    requirements:
+      Carp 0
+      ExtUtils::MakeMaker 0
+      HTTP::Date 6
+      HTTP::Headers::Util 6
+      HTTP::Request 0
+      locale 0
+      perl 5.008001
+      strict 0
   HTTP-Date-6.05
     pathname: O/OA/OALDERS/HTTP-Date-6.05.tar.gz
     provides:
@@ -1242,6 +1257,29 @@ DISTRIBUTIONS
       perl 5.016
       strict 0
       warnings 0
+  JSON-Validator-4.20
+    pathname: J/JH/JHTHORSEN/JSON-Validator-4.20.tar.gz
+    provides:
+      JSON::Validator 4.20
+      JSON::Validator::Error undef
+      JSON::Validator::Formats undef
+      JSON::Validator::Joi undef
+      JSON::Validator::Ref undef
+      JSON::Validator::Schema undef
+      JSON::Validator::Schema::Draft201909 undef
+      JSON::Validator::Schema::Draft4 undef
+      JSON::Validator::Schema::Draft6 undef
+      JSON::Validator::Schema::Draft7 undef
+      JSON::Validator::Schema::OpenAPIv2 undef
+      JSON::Validator::Schema::OpenAPIv3 undef
+      JSON::Validator::Store undef
+      JSON::Validator::Util undef
+    requirements:
+      ExtUtils::MakeMaker 0
+      List::Util 1.45
+      Mojolicious 7.28
+      YAML::PP 0.020
+      perl 5.010001
   LWP-MediaTypes-6.04
     pathname: O/OA/OALDERS/LWP-MediaTypes-6.04.tar.gz
     provides:
@@ -1592,6 +1630,18 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 0
       IO::Socket::SSL 1.94
       Mojolicious 7.53
+  Mojolicious-Plugin-OpenAPI-4.04
+    pathname: J/JH/JHTHORSEN/Mojolicious-Plugin-OpenAPI-4.04.tar.gz
+    provides:
+      Mojolicious::Plugin::OpenAPI 4.04
+      Mojolicious::Plugin::OpenAPI::Cors undef
+      Mojolicious::Plugin::OpenAPI::Parameters undef
+      Mojolicious::Plugin::OpenAPI::Security undef
+      Mojolicious::Plugin::OpenAPI::SpecRenderer undef
+    requirements:
+      ExtUtils::MakeMaker 0
+      JSON::Validator 4.18
+      Mojolicious 9.00
   Mojolicious-Plugin-SecureCORS-v2.0.4
     pathname: P/PO/POWERMAN/Mojolicious-Plugin-SecureCORS-v2.0.4.tar.gz
     provides:
@@ -2240,6 +2290,62 @@ DISTRIBUTIONS
     requirements:
       ExtUtils::MakeMaker 0
       perl 5.008
+  YAML-PP-0.027
+    pathname: T/TI/TINITA/YAML-PP-0.027.tar.gz
+    provides:
+      YAML::PP 0.027
+      YAML::PP::Common 0.027
+      YAML::PP::Constructor 0.027
+      YAML::PP::Dumper 0.027
+      YAML::PP::Emitter 0.027
+      YAML::PP::Exception 0.027
+      YAML::PP::Grammar 0.027
+      YAML::PP::Highlight 0.027
+      YAML::PP::Lexer 0.027
+      YAML::PP::Loader 0.027
+      YAML::PP::Parser 0.027
+      YAML::PP::Perl 0.027
+      YAML::PP::Preserve::Array 0.027
+      YAML::PP::Preserve::Hash 0.027
+      YAML::PP::Preserve::Scalar 0.027
+      YAML::PP::Reader 0.027
+      YAML::PP::Reader::File 0.027
+      YAML::PP::Render 0.027
+      YAML::PP::Representer 0.027
+      YAML::PP::Schema 0.027
+      YAML::PP::Schema::Binary 0.027
+      YAML::PP::Schema::Core 0.027
+      YAML::PP::Schema::Failsafe 0.027
+      YAML::PP::Schema::Include 0.027
+      YAML::PP::Schema::JSON 0.027
+      YAML::PP::Schema::Merge 0.027
+      YAML::PP::Schema::Perl 0.027
+      YAML::PP::Schema::Tie::IxHash 0.027
+      YAML::PP::Schema::YAML1_1 0.027
+      YAML::PP::Type::MergeKey 0.027
+      YAML::PP::Writer 0.027
+      YAML::PP::Writer::File 0.027
+    requirements:
+      B 0
+      B::Deparse 0
+      Carp 0
+      Data::Dumper 0
+      Encode 0
+      Exporter 0
+      ExtUtils::MakeMaker 0
+      File::Basename 0
+      Getopt::Long 0
+      MIME::Base64 0
+      Module::Load 0
+      Scalar::Util 1.07
+      Tie::Array 0
+      Tie::Hash 0
+      base 0
+      constant 0
+      overload 0
+      perl 5.008000
+      strict 0
+      warnings 0
   local-lib-2.000024
     pathname: H/HA/HAARG/local-lib-2.000024.tar.gz
     provides:
