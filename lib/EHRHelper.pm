@@ -21,8 +21,12 @@ use Encode;
 # Some JSON hackery
 use JSON::MaybeXS ':all';
 
+my $EHRBASE = $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
+
+say STDERR "ehrbase URI: $EHRBASE";
+
 # Primary code block
-sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = 'http://localhost:8080') {
+sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = $EHRBASE) {
     my $debug = 0;
     if ($set_debug) { $debug = 1 }
 

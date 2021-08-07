@@ -8,10 +8,6 @@ use JSON::MaybeXS;
 use OpusVL::ACME::C19;
 use EHRHelper;
 
-my $ehrbase = $ENV{EHRBASE_URI} or die "set EHRBASE_URI";
-
-say STDERR "ehrbase URI: $ehrbase";
-
 my $news2_calculator = OpusVL::ACME::C19->new(!! $ENV{DEBUG});
 
 # Make sure ehrbase is synced with our patients
@@ -19,7 +15,7 @@ sub new ($class, %args) {
     my $self = {};
     $self->{template_path} = $args{template_path};
     $self->{dbh} = $args{dbh};
-    $self->{ehr_helper} = EHRHelper->new($self->{template_path}, $self->{dbh}, 1, $ehrbase);
+    $self->{ehr_helper} = EHRHelper->new($self->{template_path}, $self->{dbh}, 1);
 
     bless $self, $class;
 }
