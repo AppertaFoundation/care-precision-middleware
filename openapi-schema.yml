@@ -214,28 +214,19 @@ components:
         - identifier
 
     Assessment:
-      anyOf:
-        - type: object
-          properties:
-            denwis:
-              $ref: "#/components/schemas/DENWIS"
-          required:
-            - denwis
-#        - properties:
-#            sepsis:
-#              $ref: "#/components/schemas/Sepsis"
-        - type: object
-          properties:
-            news2:
-              $ref: "#/components/schemas/NEWS2"
-          required:
-            - news2
-        - type: object
-          properties:
-            covid:
-              $ref: "#/components/schemas/COVID"
-          required:
-            - covid
+      type: object
+      properties:
+        denwis:
+          $ref: "#/components/schemas/DENWIS"
+#        sepsis:
+#          $ref: "#/components/schemas/Sepsis"
+        news2:
+          $ref: "#/components/schemas/NEWS2"
+        covid:
+          $ref: "#/components/schemas/COVID"
+      additionalProperties: false
+      minProperties: 1
+
     COVID:
       anyOf:
       - properties:
