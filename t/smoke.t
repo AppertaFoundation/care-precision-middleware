@@ -7,6 +7,7 @@ use Mojo::File qw(curfile);
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 
+$ENV{EHRBASE_URI} = 'quiescence';
 $ENV{FRONTEND_HOSTNAME} = 'localhost';
 
 my $app = Test::Mojo->new(curfile->dirname->sibling('app/careprotect.pl'));
