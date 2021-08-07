@@ -7,16 +7,11 @@ use DBHelper;
 
 use Data::UUID;
 use DateTime;
-use File::Temp qw(tempfile);
-use JSON::Pointer;
 use List::Gather;
 use Mojo::UserAgent;
 use Mojo::File qw(curfile);
-use Template;
 use Try::Tiny;
 use JSON::Schema::Tiny qw(evaluate);
-
-use Data::Dumper;
 
 # Load JSON / UUID mnodules
 my $uuid                    =   Data::UUID->new;
@@ -37,7 +32,6 @@ helper valid_body => sub ($c) {
     my $schema = $c->openapi->spec;
 
     my $result = evaluate($c->req->json, $schema);
-    print Dumper [$c->req->json, $schema, $result];
 
     return $c if $result->{valid};
 
@@ -95,8 +89,6 @@ get '/_/auth' => sub ($c) {
 get '/patients' => sub ($c) {
     my $params = $c->req->query_params->to_hash;
     my $search_spec = {};
-
-    print STDERR Dumper $params;
 
     if (my $sort_key = $params->{sort_key}) {
         my $sort_dir = $params->{sort_dir} // 'asc';
@@ -189,30 +181,7 @@ post '/patient/<:id>/cdr' => sub ($c) {
         }
     };
 
-    my $xml_transformation = sub {
-        my $big_href = shift;
-        my $tt2 = Template->new({ ENCODING => 'utf8', ABSOLUTE => 1 });
-
-        my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
-        my $xml_tt = curfile->dirname->sibling('etc/composition.xml.tt2')->to_abs->to_string;
-
-        $tt2->process($xml_tt, {
-            json_path => $json_path,
-            generate_uuid => sub { $uuid->to_string($uuid->create) } },
-        \my $xml) or die $tt2->error;
-
-        return $xml;
-    };
-
-    my $xml_composition = $xml_transformation->($composition);
-
-    # Write to /tmp for a log
-    if ($ENV{DEBUG}) {
-        my ($fh, $fn) = tempfile;
-        binmode $fh, ':utf8';
-        print $fh $xml_composition;
-        say STDERR "Composition XML is in $fn";
-    }
+    my $xml_composition = $c->utils->composition_to_xml($composition);
 
     try {
         $c->utils->store_composition($patient_uuid, $xml_composition);
