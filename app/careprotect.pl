@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
 use Mojolicious::Lite -signatures;
 
-use lib 'lib';
 use Utils;
 use EHRHelper;
 use DBHelper;
