@@ -129,6 +129,7 @@ paths:
       responses:
         '204':
           description: If this succeeds then your assessment was stored.
+
 components:
   schemas:
     at_code:
@@ -146,6 +147,10 @@ components:
           type: integer
         value:
           type: string
+      required:
+        - code
+        - ordinal
+        - value
 
     Identifier:
       description: This structure will vary depending on the Careprotect installation in use, but will always contain id
@@ -214,6 +219,8 @@ components:
           properties:
             denwis:
               $ref: "#/components/schemas/DENWIS"
+          required:
+            - denwis
 #        - properties:
 #            sepsis:
 #              $ref: "#/components/schemas/Sepsis"
@@ -221,10 +228,14 @@ components:
           properties:
             news2:
               $ref: "#/components/schemas/NEWS2"
+          required:
+            - news2
         - type: object
           properties:
             covid:
               $ref: "#/components/schemas/COVID"
+          required:
+            - covid
     COVID:
       anyOf:
       - properties:
@@ -245,6 +256,8 @@ components:
                     code:
                       type: string
                       pattern: '^\d+$'
+        required:
+          - symptoms
       - properties:
           covid_exposure:
             properties:
@@ -260,6 +273,8 @@ components:
                     $ref: "#/components/schemas/at_code"
                   value:
                     type: string
+          required:
+            - covid_exposure
     DENWIS:
       properties:
         q1_breathing:
@@ -285,6 +300,17 @@ components:
         total_score:
           description: We think this score is provided by the nurse
           type: integer
+      required:
+        - q1_breathing
+        - q2_circulation
+        - q3_temperature
+        - q4_mentation
+        - q5_agitation
+        - q6_pain
+        - q7_trajectory
+        - q8_patient_subjective
+        - q9_nurse_subjective
+        - total_score
     NEWS2:
       properties:
         temperature:
@@ -301,24 +327,41 @@ components:
                 oxygen_delivery:
                   type: string
                   enum: ["Room air"]
+              required:
+                - oxygen_delivery
             - properties:
                 flow_rate:
                   type: number
                   description: Flow rate in litres per minute
                 oxygen_delivery:
                   type: string
+              required:
+                - flow_rate
+                - oxygen_delivery
         acvpu:
           properties:
             code:
               $ref: '#/components/schemas/at_code'
             value:
               type: string
+          required:
+            - code
+            - value
         systolic:
           type: integer
           description: Systolic blood pressure in mmHg
         diastolic:
           type: integer
           description: Diastolic blood pressure in mmHg
+      required:
+        - temperature
+        - pulse
+        - respiration_rate
+        - spO2
+        - inspired_oxygen
+        - acvpu
+        - systolic
+        - diastolic
 #    Sepsis:
 #      properties:
 
@@ -328,15 +371,24 @@ components:
       - properties:
           denwis:
             $ref: "#/components/schemas/DENWISSummary"
+        required:
+          - denwis
       - properties:
           sepsis:
             $ref: "#/components/schemas/SepsisSummary"
+        required:
+          - sepsis
       - properties:
           news2:
             $ref: "#/components/schemas/NEWS2Summary"
+        required:
+          - news2
       - properties:
           covid:
             $ref: "#/components/schemas/COVIDSummary"
+        required:
+          - covid
+
     COVIDSummary:
       properties:
         suspected_covid_status:
@@ -353,15 +405,24 @@ components:
               format: date-time
             comment:
               type: string
+          required:
+            - date
         date_isolation_due_to_end:
           type: string
           format: date-time
+      required:
+        - suspected_covid_status
+        - covid_test_request
+        - date_isolation_due_to_end
     DENWISSummary:
       properties:
         value:
           type: integer
         trend:
           type: string
+      required:
+        - value
+        - trend
     NEWS2Summary:
       properties:
         clinical_risk:
@@ -379,6 +440,10 @@ components:
             - decreasing
             - same
             - first
+      required:
+        - clinical_risk
+        - score
+        - trend
     NEWS2Score:
       properties:
         respiration_rate:
@@ -397,6 +462,15 @@ components:
           $ref: '#/components/schemas/code_value_ordinal'
         total_score:
           type: integer
+      required:
+        - respiration_rate
+        - spo_scale_1
+        - air_or_oxygen
+        - systolic_blood_pressure
+        - pulse
+        - consciousness
+        - temperature
+        - total_score
     SepsisSummary:
       properties:
         value:
@@ -406,4 +480,6 @@ components:
             - green
             - amber
             - grey
+      required:
+        - value
 
