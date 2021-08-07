@@ -302,6 +302,7 @@ components:
         - q8_patient_subjective
         - q9_nurse_subjective
         - total_score
+      additionalProperties: false
     NEWS2:
       properties:
         temperature:
