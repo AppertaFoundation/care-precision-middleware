@@ -1,6 +1,9 @@
 #!perl
 
 use v5.28;
+
+use lib 't/lib';
+
 use Test::More;
 use Test::Mojo;
 use Mojo::File qw(curfile);
