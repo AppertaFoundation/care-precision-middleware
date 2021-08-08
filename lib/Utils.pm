@@ -10,6 +10,7 @@ use Data::UUID;
 use File::Temp qw(tempfile);
 use JSON::Pointer;
 use JSON::MaybeXS;
+use List::Util qw(pairmap);
 use OpusVL::ACME::C19;
 use Template;
 
@@ -302,7 +303,7 @@ sub compose_assessments($self, $patient_uuid, @extra) {
 
     my $composed = {};
     my @compositions = map { $self->assessments_from_xml($_) }
-            $self->{ehr_helper}->get_compositions($patient_uuid);
+            $self->{ehr_helper}->get_compositions($patient_uuid)->@*;
 
     for my $composition (@extra, @compositions) {
         if ($composition->{denwis}) {

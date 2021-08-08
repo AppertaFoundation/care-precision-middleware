@@ -15,7 +15,6 @@ use Data::Dumper;
 
 use Mojo::UserAgent;
 use Path::Tiny;
-use List::Util qw(pairmap);
 use Encode;
 
 # Some JSON hackery
