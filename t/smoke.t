@@ -14,11 +14,20 @@ $ENV{EHRBASE_URI} = 'quiescence';
 $ENV{FRONTEND_HOSTNAME} = 'localhost';
 
 my $app = Test::Mojo->new(curfile->dirname->sibling('app/careprotect.pl'));
-
+#
 # Retrieve the patient list and check for the presence of Elsie Mills-Samson
 my $patients = $app->get_ok('/v1/patients')
     ->status_is(200)
     ->tx->res->json;
+
+subtest "Invalid data" => sub {
+    $app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => '')
+        ->status_is(400, "Posting nothing is invalid");
+
+    my $nothing = { assessment => {} };
+    $app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $nothing, "Posting empty object")
+        ->status_is(400, "Empty object failed");
+};
 
 $app->get_ok('/v1/patient/' . $patients->[0]->{uuid})
     ->status_is(200)
@@ -37,11 +46,6 @@ $app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $denwi
     ->status_is(204, "DENWIS posted OK")
     ->or(sub { diag Dumper $app->tx->res->json });
 
-# Validation is currently not working right
-#$denwis = { assessment => {} };
-#$app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $denwis, "Posting DENWIS object")
-#    ->status_is(400, "Invalid DENWIS failed");
-#
 
 my $news2 = decode_json(curfile->dirname->child('etc/news2-minimum-fields.json')->slurp);
 

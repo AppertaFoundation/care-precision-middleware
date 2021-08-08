@@ -1,27 +1,17 @@
 {
     "news2": {
-        "respirations": {
-            "magnitude": 55
-        },
-        "spo2": 55,
-        "systolic": {
-            "magnitude": 55
-        },
-        "diastolic": {
-            "magnitude": 44
-        },
-        "pulse": {
-            "magnitude": 23
-        },
+        "respiration_rate": 55,
+        "spO2": 55,
+        "systolic": 55,
+        "diastolic": 44,
+        "pulse": 23,
         "acvpu": {
             "code": "at0008",
             "value": "Unresponsive"
         },
-        "temperature": {
-            "magnitude": 35
-        },
+        "temperature": 35,
         "inspired_oxygen": {
-            "method_of_oxygen_delivery": "Room Air"
+            "oxygen_delivery": "Room air"
         }
     }
 }

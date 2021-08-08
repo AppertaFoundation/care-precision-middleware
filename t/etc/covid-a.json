@@ -1,22 +1,19 @@
 {
    "covid":{
-     "date_of_onset_of_first_symptoms":"2021-03-18T00:00:00.000Z",
-     "specific_symptom_sign":[
-        {
-           "value":"Nausea and vomiting",
-           "code":"16932000",
-           "terminology":"SNOMED-CT"
-        },
-        {
-           "value":"Joint pain",
-           "code":"57676002",
-           "terminology":"SNOMED-CT"
-        },
-        {
-           "value":"Chest pain",
-           "code":"29857009",
-           "terminology":"SNOMED-CT"
-        }
-     ]
+     "symptoms": [
+       {
+         "value":"Nausea and vomiting",
+         "code":"16932000"
+       },
+       {
+         "value":"Joint pain",
+         "code":"57676002"
+       },
+       {
+         "value":"Chest pain",
+         "code":"29857009"
+       }
+    ],
+    "date_of_first_symptoms":"2021-03-18T00:00:00.000Z"
   }
 }
