@@ -5,9 +5,26 @@ use experimental 'signatures';
 use Data::UUID;
 
 sub new($class, $template_path, $dbh, $set_debug = 0, $ehrbase = '') {
-    return bless {
+    my $self = bless {
         patients => {}
     }, $class;
+
+    foreach my $patient_ehrid_raw ($dbh->return_col('uuid')->@*) {
+        my $patient_ehrid = $patient_ehrid_raw->[0];
+
+        my $patient = $dbh->return_row(
+            'uuid',
+            $patient_ehrid
+        );
+
+        $self->create_ehr(
+            $patient_ehrid,
+            $patient->{name},
+            $patient->{nhsnumber}
+        );
+    }
+
+    return $self;
 }
 
 sub create_ehr($self,$uuid,$name,$nhsnumber) {
