@@ -264,8 +264,8 @@ components:
                     $ref: "#/components/schemas/at_code"
                   value:
                     type: string
-        required:
-          - covid_exposure
+        minProperties: 1
+        additionalProperties: false
     DENWIS:
       properties:
         q1_breathing:
