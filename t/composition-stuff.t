@@ -29,3 +29,15 @@ my $composition = {
 };
 
 my $xml_composition = $utils->composition_to_xml($composition);
+
+my $all_patients = $dbh->find_patients({});
+
+my $patient_uuid = $all_patients->[0]->{uuid};
+
+$utils->store_composition($patient_uuid, $xml_composition);
+
+my $compositions = $utils->{ehr_helper}->get_compositions($patient_uuid);
+
+my @assessments = $utils->assessments_from_xml($compositions->[0]);
+
+use Data::Dumper; print Dumper \@assessments;
