@@ -11,7 +11,6 @@ use List::Gather;
 use Mojo::UserAgent;
 use Mojo::File qw(curfile);
 use Try::Tiny;
-use JSON::Schema::Tiny qw(evaluate);
 
 # Load JSON / UUID mnodules
 my $uuid                    =   Data::UUID->new;
@@ -29,15 +28,7 @@ plugin "OAuth2" => {
 };
 
 helper valid_body => sub ($c) {
-    my $schema = $c->openapi->spec;
-
-    my $result = evaluate($c->req->json, $schema);
-
-    return $c if $result->{valid};
-
-    $c->res->code(400);
-    $c->render(openapi => $result);
-    return;
+    return $c->openapi->valid_input;
 };
 
 helper utils => sub ($c) {
