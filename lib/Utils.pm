@@ -112,31 +112,19 @@ sub assessments_from_xml($self, $xml_composition) {
 
         push @assessments, {
             'news2' => {
-                'respirations' => {
-                    'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
-                },
-                'spo2' => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
-                'systolic' => {
-                    'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
-                },
-                'diastolic' => {
-                    'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
-                },
-                'pulse' => {
-                    'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
-                },
+                'respirations' => $news2_node->$dig_into_xml_for({ name => 'Respirations'}, 'magnitude'),
+                'spO2' => $news2_node->$dig_into_xml_for({ name => 'SpO₂'}, 'numerator'),
+                'systolic' => $news2_node->$dig_into_xml_for({ name => 'Systolic' }, 'magnitude'),
+                'diastolic' => $news2_node->$dig_into_xml_for({ name => 'Diastolic' }, 'magnitude'),
+                'pulse' => $news2_node->$dig_into_xml_for({ name => 'Pulse Rate' }, 'magnitude'),
                 'acvpu' => {
                     'code' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value code_string'),
                     'value' => $news2_node->$dig_into_xml_for({ name => 'ACVPU' }, 'value > value'),
                 },
-                'temperature' => {
-                    'magnitude' => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
-                },
+                'temperature' => $news2_node->$dig_into_xml_for({ name => 'Temperature' }, { name => 'Temperature' }, 'magnitude'),
                 'inspired_oxygen' => {
                     'method_of_oxygen_delivery' => $news2_node->$dig_into_xml_for({ name => "Method of oxygen delivery" }, 'value value'),
-                    'flow_rate' => {
-                        'magnitude' => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
-                    }
+                    'flow_rate' => $news2_node->$dig_into_xml_for({ name => "Flow rate" }, 'magnitude')
                 },
                 'score' => {
                     'systolic_blood_pressure' => {
@@ -299,7 +287,7 @@ sub assessments_from_xml($self, $xml_composition) {
 }
 
 sub compose_assessments($self, $patient_uuid, @extra) {
-    # Put a draft assesment in @extra. You can do multiple I suppose.
+    # Put a draft assessment in @extra. You can do multiple I suppose.
 
     my $composed = {};
     my @compositions = map { $self->assessments_from_xml($_) }
@@ -416,11 +404,11 @@ sub fill_in_scores($self, $assessment) {
 
     if ($assessment->{news2}) {
         my $news2_scoring = $news2_calculator->news2_calculate_score({
-            'respiration_rate'          =>  $assessment->{news2}->{respirations}->{magnitude},
-            'spo2_scale_1'              =>  $assessment->{news2}->{spo2},
-            'pulse'                     =>  $assessment->{news2}->{pulse}->{magnitude},
-            'temperature'               =>  $assessment->{news2}->{temperature}->{magnitude},
-            'systolic_blood_pressure'   =>  $assessment->{news2}->{systolic}->{magnitude},
+            'respiration_rate'          =>  $assessment->{news2}->{respiration_rate},
+            'spo2_scale_1'              =>  $assessment->{news2}->{spO2},
+            'pulse'                     =>  $assessment->{news2}->{pulse},
+            'temperature'               =>  $assessment->{news2}->{temperature},
+            'systolic_blood_pressure'   =>  $assessment->{news2}->{systolic},
             'air_or_oxygen'             =>  defined($assessment->{news2}->{inspired_oxygen}->{flow_rate}) ? 'Oxygen' : 'Air',
             'consciousness'             =>  do {
                 my $return_value;

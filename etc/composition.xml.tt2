@@ -137,7 +137,7 @@
                                         <value>Temperature</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/temperature/magnitude') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/temperature') %]</magnitude>
                                         <!-- FIXME: JSON has °C here -->
                                         <units>Cel</units>
                                         <!-- FIXME: not represented in JSON -->
@@ -197,7 +197,7 @@
                                         <value>SpO₂</value>
                                     </name>
                                     <value xsi:type="DV_PROPORTION">
-                                        <numerator>[% json_path('/assessment/news2/spo2') %]</numerator>
+                                        <numerator>[% json_path('/assessment/news2/spO2') %]</numerator>
                                         <denominator>100.0</denominator>
                                         <type>2</type>
                                     </value>
@@ -217,13 +217,13 @@
                                         </archetype_id>
                                         <rm_version>1.0.4</rm_version>
                                     </archetype_details>
-                                    [% IF json_path('/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]
+                                    [% IF json_path('/assessment/news2/inspired_oxygen/flow_rate') %]
                                         <items xsi:type="ELEMENT" archetype_node_id="at0051">
                                             <name>
                                                 <value>Flow rate</value>
                                             </name>
                                             <value xsi:type="DV_QUANTITY">
-                                                <magnitude>[% json_path('/assessment/news2/inspired_oxygen/flow_rate/magnitude') %]</magnitude>
+                                                <magnitude>[% json_path('/assessment/news2/inspired_oxygen/flow_rate') %]</magnitude>
                                                 <units>l/min</units>
                                                 <precision>2</precision>
                                             </value>
@@ -298,7 +298,7 @@
                                         </defining_code>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/pulse/magnitude') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/pulse') %]</magnitude>
                                         <units>/min</units>
                                         <precision>0</precision>
                                     </value>
@@ -356,7 +356,7 @@
                                         <value>Rate</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/respirations/magnitude') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/respirations') %]</magnitude>
                                         <units>/min</units>
                                         <precision>0</precision>
                                     </value>
@@ -476,7 +476,7 @@
                                         <value>Systolic</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/systolic/magnitude') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/systolic') %]</magnitude>
                                         <units>mm[Hg]</units>
                                         <precision>0</precision>
                                     </value>
@@ -487,7 +487,7 @@
                                         <value>Diastolic</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/diastolic/magnitude') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/diastolic') %]</magnitude>
                                         <units>mm[Hg]</units>
                                         <precision>0</precision>
                                     </value>
@@ -682,8 +682,7 @@
                                         <value>Total score</value>
                                     </name>
                                     <value xsi:type="DV_COUNT">
-                                        <magnitude>[%
-                                        json_path('/assessment/news2/score/total_score') %]</magnitude>
+                                        <magnitude>[% json_path('/assessment/news2/score/total_score') %]</magnitude>
                                     </value>
                                 </items>
                                 <items xsi:type="ELEMENT" archetype_node_id="at0056">
@@ -914,7 +913,7 @@
                                     <value>Q 10 Other comment</value>
                                 </name>
                                 <value xsi:type="DV_TEXT">
-                                    <value>[% json_path('/assessment/denwis/q_10_other_comment') %]</value>
+                                    <value>[% json_path('/assessment/denwis/q10_other_comment') %]</value>
                                 </value>
                             </items>
                             <items xsi:type="ELEMENT" archetype_node_id="at0008">
@@ -944,7 +943,7 @@
                     </archetype_id>
                     <rm_version>1.0.4</rm_version>
                 </archetype_details>
-                [% IF json_path('/assessment/covid/date_of_onset_of_first_symptoms') %]
+                [% IF json_path('/assessment/covid/symptoms') %]
                     <items xsi:type="OBSERVATION" archetype_node_id="openEHR-EHR-OBSERVATION.symptom_sign_screening.v0">
                         <name>
                             <value>Covid symptoms</value>
@@ -994,14 +993,14 @@
                                             <value>Date of onset of first symptoms</value>
                                         </name>
                                         <value xsi:type="DV_DATE_TIME">
-                                            <value>[% json_path('/assessment/covid/date_of_onset_of_first_symptoms') %]</value>
+                                            <value>[% json_path('/assessment/covid/date_of_first_symptoms') %]</value>
                                         </value>
                                     </items>
                                     <items xsi:type="CLUSTER" archetype_node_id="at0022">
                                         <name>
                                             <value>Specific symptom/sign</value>
                                         </name>
-                                        [% FOR struct IN json_path('/assessment/covid/specific_symptom_sign') %]
+                                        [% FOR struct IN json_path('/assessment/covid/symptoms') %]
                                             <items xsi:type="ELEMENT" archetype_node_id="at0004">
                                                 <name>
                                                     <value>Symptom or sign name</value>
@@ -1024,7 +1023,7 @@
                     </items>
                 [% END %]
 
-                [% IF json_path('/assessment/covid/covid_19_exposure') %]
+                [% IF json_path('/assessment/covid/covid_exposure') %]
                     <items xsi:type="EVALUATION" archetype_node_id="openEHR-EHR-EVALUATION.health_risk-covid.v0">
                         <name>
                             <value>Covid-19 exposure</value>
@@ -1069,7 +1068,7 @@
                                     </defining_code>
                                 </value>
                             </items>
-                            [% struct = json_path('/assessment/covid/covid_19_exposure/care_setting_has_confirmed_covid_19') %]
+                            [% struct = json_path('/assessment/covid/covid_exposure/confirmed_exposure') %]
                             [% IF struct %]
                                 <items xsi:type="CLUSTER" archetype_node_id="at0016">
                                     <name>
@@ -1091,7 +1090,7 @@
                                     </items>
                                 </items>
                             [% END %]
-                            [% struct = json_path('/assessment/covid/covid_19_exposure/contact_with_suspected_confirmed_covid_19') %]
+                            [% struct = json_path('/assessment/covid/covid_exposure/suspected_contact') %]
                             [% IF struct %]
                                 <items xsi:type="CLUSTER" archetype_node_id="at0016">
                                     <name>

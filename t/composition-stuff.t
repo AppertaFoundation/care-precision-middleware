@@ -16,7 +16,16 @@ my $utils = Utils->new(
     dbh => $dbh,
 );
 
-my $assessment = decode_json(curfile->dirname->child('etc/denwis.json')->slurp);
+my $denwis = decode_json(curfile->dirname->child('etc/denwis.json')->slurp);
+my $news2 = decode_json(curfile->dirname->child('etc/news2-minimum-fields.json')->slurp);
+my $covid = decode_json(curfile->dirname->child('etc/covid-a.json')->slurp);
+
+my $assessment = {
+    %$denwis, %$covid, %$news2
+};
+
+$utils->fill_in_scores($assessment);
+
 my $composition = {
     assessment => $assessment,
     header     => {
@@ -28,6 +37,7 @@ my $composition = {
     }
 };
 
+
 my $xml_composition = $utils->composition_to_xml($composition);
 
 my $all_patients = $dbh->find_patients({});
@@ -38,6 +48,11 @@ $utils->store_composition($patient_uuid, $xml_composition);
 
 my $compositions = $utils->{ehr_helper}->get_compositions($patient_uuid);
 
-my @assessments = $utils->assessments_from_xml($compositions->[0]);
+# Just don't crash - don't need return val
+$utils->assessments_from_xml($compositions->[0]);
 
-use Data::Dumper; print Dumper \@assessments;
+my $composed = $utils->compose_assessments( $patient_uuid );
+
+my $summarised = $utils->summarise_composed_assessment( $composed );
+
+use Data::Dumper; print Dumper $xml_composition;
