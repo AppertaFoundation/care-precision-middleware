@@ -1,28 +1,10 @@
 version: '3.2'
 
 services:
-  frontend:
-    image: ${FRONTEND_IMAGE:-registry.deploy.opusvl.net/careprotect/care-protect-ui}:${FRONTEND_IMAGE_VERSION:-latest}
-    environment:
-      REACT_APP_STATIC_COVID: ${REACT_APP_STATIC_COVID:-false}
-      REACT_APP_STATIC: ${REACT_APP_STATIC:-false}
-      REACT_APP_API: ${REACT_APP_API:-http://localhost}
-      REACT_APP_STATIC_COVID_CONTROL: ${REACT_APP_STATIC_COVID_CONTROL:-false}
-    ports:
-      - "40080:80"
-    depends_on:
-      - middleware
-    restart: unless-stopped
-    healthcheck: 
-      test: [ "CMD", "curl", "http://localhost" ]
-      interval: "60s"
-      timeout: "5s"
-      retries: 3
-
   middleware:
-    image: mojo-middleware:latest
+    image: registry.deploy.opusvl.net/careprotect/middleware:develop-73eb3ed
     ports:
-      - "40081:3000"
+      - "${PORTBASE}:3000"
     depends_on:
       - ehrbase
     environment:
@@ -36,7 +18,7 @@ services:
       retries: 3
 
   ehrbase:
-    image: ehrbase/ehrbase:next
+    image: registry.deploy.opusvl.net/system/ehrbase:20082021
     ports:
       - "40082:8080"
     environment:
