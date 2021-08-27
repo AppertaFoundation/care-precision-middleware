@@ -1,39 +1,44 @@
+version: '3.2'
 
 services:
-  swaggerui:
-    image: registry.deploy.opusvl.net/system/swagger-ui:25082021
-    ports:
-      - "${PORTBASE}80:8080"
+  frontend:
+    image: ${FRONTEND_IMAGE:-registry.deploy.opusvl.net/careprotect/care-protect-ui}:${FRONTEND_IMAGE_VERSION:-latest}
     environment:
-      - API_URL=http://192.168.240.2:38380/v1
-    healthcheck:
-      test: [ "CMD", "curl", "http://swaggerui:8080" ]
+      REACT_APP_STATIC_COVID: ${REACT_APP_STATIC_COVID:-false}
+      REACT_APP_STATIC: ${REACT_APP_STATIC:-false}
+      REACT_APP_API: ${REACT_APP_API:-http://localhost}
+      REACT_APP_STATIC_COVID_CONTROL: ${REACT_APP_STATIC_COVID_CONTROL:-false}
+    ports:
+      - "40080:80"
+    depends_on:
+      - middleware
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "curl", "http://localhost" ]
       interval: "60s"
       timeout: "5s"
       retries: 3
-    expose:
-      - 38380
 
   middleware:
-    image: registry.deploy.opusvl.net/careprotect/middleware:develop-73eb3ed
+    image: mojo-middleware:latest
     ports:
-      - "${PORTBASE}81:3000"
+      - "40081:3000"
     depends_on:
       - ehrbase
     environment:
       FRONTEND_HOSTNAME: ${FRONTEND_HOSTNAME:-localhost}
-      EHRBASE_URI: ${EHRBASE_URI:-http://ehrbase:3000}
+      EHRBASE_URI: ${EHRBASE_URI:-http://ehrbase:8080}
     restart: unless-stopped
     healthcheck: 
-      test: [ "CMD", "curl", "http://middleware:3000/v1" ]
+      test: [ "CMD", "curl", "http://localhost:18080" ]
       interval: "60s"
       timeout: "5s"
       retries: 3
-    expose:
-      - 38381
 
   ehrbase:
-    image: registry.deploy.opusvl.net/careprotect/ehrbase:20082021
+    image: ehrbase/ehrbase:next
+    ports:
+      - "40082:8080"
     environment:
       DB_URL: jdbc:postgresql://ehrdb/ehrbase
       DB_USER: ${EHRBASE_USER:-ehrbase}
