@@ -304,7 +304,7 @@ sub get_compositions($self, $patient_uuid) {
         $res->body;
     };
 
-    return [ map { $retrieve_composition->($patient_uuid, $_->[0]) } @$composition_objs ];
+    return map { $retrieve_composition->($patient_uuid, $_->[0]) } @$composition_objs;
 }
 
 =head2 store_composition

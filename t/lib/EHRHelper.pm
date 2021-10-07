@@ -43,7 +43,7 @@ sub check_ehr_exists($self,$nhs) {
 }
 
 sub get_compositions($self, $patient_uuid) {
-    return $self->{patients}->{$patient_uuid}->{compositions};
+    return $self->{patients}->{$patient_uuid}->{compositions}->@*;
 }
 
 sub store_composition($self, $patient_uuid, $composition) {
