@@ -1,0 +1,60 @@
+
+services:
+  swaggerui:
+    image: registry.deploy.opusvl.net/system/swagger-ui:25082021
+    ports:
+      - "${PORTBASE}80:8080"
+    environment:
+      - API_URL=http://192.168.240.2:38380/v1
+    healthcheck:
+      test: [ "CMD", "curl", "http://swaggerui:8080" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+    expose:
+      - 38380
+
+  middleware:
+    image: registry.deploy.opusvl.net/careprotect/middleware:develop-73eb3ed
+    ports:
+      - "${PORTBASE}81:3000"
+    depends_on:
+      - ehrbase
+    environment:
+      FRONTEND_HOSTNAME: ${FRONTEND_HOSTNAME:-localhost}
+      EHRBASE_URI: ${EHRBASE_URI:-http://ehrbase:3000}
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "curl", "http://middleware:3000/v1" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+    expose:
+      - 38381
+
+  ehrbase:
+    image: registry.deploy.opusvl.net/careprotect/ehrbase:20082021
+    environment:
+      DB_URL: jdbc:postgresql://ehrdb/ehrbase
+      DB_USER: ${EHRBASE_USER:-ehrbase}
+      DB_PASSWORD: ${EHRBASE_PASSWORD?REQUIRED}
+    restart: unless-stopped
+    depends_on:
+      - ehrdb
+
+  ehrdb:
+    image: registry.deploy.opusvl.net/careprotect/ehrbase-postgres:11.11
+    environment:
+      EHRBASE_USER: ${EHRBASE_USER:-ehrbase}
+      EHRBASE_PASSWORD: ${EHRBASE_PASSWORD?REQUIRED}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?REQUIRED}
+    restart: unless-stopped
+    healthcheck: 
+      test: [ "CMD", "pg_isready", "-h", "localhost", "-d", "ehrbase" ]
+      interval: "60s"
+      timeout: "5s"
+      retries: 3
+    volumes:
+      - ${CONTAINER_VOLUME?REQUIRED}/${SERIAL?REQUIRED}/postgres:/var/lib/postgresql/pgdata
+

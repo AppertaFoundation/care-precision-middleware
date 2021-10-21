@@ -1,0 +1,17 @@
+{
+    "news2": {
+        "respiration_rate": 55,
+        "spO2": 55,
+        "systolic": 55,
+        "diastolic": 44,
+        "pulse": 23,
+        "acvpu": {
+            "code": "at0008",
+            "value": "Unresponsive"
+        },
+        "temperature": 35,
+        "inspired_oxygen": {
+            "oxygen_delivery": "Room air"
+        }
+    }
+}

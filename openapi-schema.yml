@@ -1,0 +1,477 @@
+openapi: 3.0.0
+info:
+  title: Careprotect API
+  description: OpenAPI specification for Careprotect stuff
+  version: 0.0.1
+servers:
+  - url: /v1
+paths:
+  /patients:
+    get:
+      operationId: getPatients
+      summary: Returns a list of patients.
+      parameters:
+        - in: query
+          name: sort_key
+          schema:
+            type: string
+            enum: [ "uuid", "name", "birth_date" ]
+          description: The key to sort results by.
+        - in: query
+          name: sort_dir
+          schema:
+            type: string
+            enum: [ "asc", "desc" ]
+          description: The direction to sort, default asc
+        - in: query
+          name: location
+          schema:
+            type: string
+            enum: [ "Bedroom" ]
+          description: Show only patients in the given location. In a full system this would have more options.
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: This value is used for a substring search on patients' names
+        - in: query
+          name: birth_date
+          schema:
+            type: string
+          description: A date, optionally followed by gt, gte, lt, or lte, and separated by a colon.
+          examples:
+            exact:
+              value: 2001-01-01
+              summary: Returns everyone born on this date
+            gt:
+              value: 2001-01-01:gt
+              summary: Returns everyone born after this date
+            gte:
+              value: 2001-01-01:gte
+              summary: Returns everyone born on or after this date
+      responses:
+        '200':
+          description: An array of Patient objects with an AssessmentSummary in each
+          content:
+           application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/Patient"
+                    - $ref: "#/components/schemas/AssessmentSummary"
+  /patient/{id}:
+    get:
+      operationId: getSinglePatient
+      summary: Get a single patient by ID (see Identifier)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The internal UUID assigned to the patient
+      responses:
+        '200':
+          description: An array of Patient objects with an AssessmentSummary in each
+          content:
+           application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Patient"
+                  - $ref: "#/components/schemas/AssessmentSummary"
+
+  /patient/{id}/cdr/draft:
+    post:
+      operationId: postDraft
+      summary: Send an assessment to see whether it looks right.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The internal UUID assigned to the patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Assessment'
+      responses:
+        '200':
+          description: Returns a summary of the input assessment, to help show input errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentSummary'
+
+  /patient/{id}/cdr:
+    post:
+      operationId: postAssessment
+      summary: Save an assessment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The internal UUID assigned to the patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Assessment'
+      responses:
+        '204':
+          description: If this succeeds then your assessment was stored.
+
+components:
+  schemas:
+    at_code:
+      oneOf:
+      - type: string
+        pattern: '^at\d{4}$'
+      - type: string
+        pattern: '^at\d+\.\d+$'
+        description: I saw this in the COVID stuff. Consistency is for chumps.
+    code_value_ordinal:
+      properties:
+        code:
+          $ref: "#/components/schemas/at_code"
+        ordinal:
+          type: integer
+        value:
+          type: string
+      required:
+        - code
+        - ordinal
+        - value
+
+    Identifier:
+      description: This structure will vary depending on the Careprotect installation in use, but will always contain id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID identifier provided by Careprotect app
+        nhs_number:
+          type: string
+          description: Patient's NHS number
+      required:
+        - id
+    Measurements:
+      description: Current data about a patient's variable measurements and indicators
+      properties:
+        soft_signs:
+          description: Array of free-text strings describing informal signs of issues
+          type: array
+          items:
+            type: string
+        frailty:
+          description: Array of values from a pre-defined set
+          properties:
+            code:
+              $ref: '#/components/schemas/at_code'
+            value:
+              type: string
+        height:
+          description: Patient's height in centimetres
+          type: number
+        weight:
+          description: Patient's weight in kilograms
+          type: number
+    Patient:
+      properties:
+        location:
+          type: string
+          description: Where they are. This is currently always "Bedroom"
+          enum: [ "Bedroom" ]
+        name:
+          type: string
+          description: Full name of patient
+        gender:
+          type: string
+          description: Gender of patient
+          enum:
+            - male
+            - female
+            - nonbinary
+            - unspecified
+        birth_date:
+          type: string
+          format: date
+          description: Patient's date of birth
+        measurements:
+          $ref: "#/components/schemas/Measurements"
+        identifier:
+          $ref: "#/components/schemas/Identifier"
+      required:
+        - identifier
+
+    Assessment:
+      type: object
+      properties:
+        denwis:
+          $ref: "#/components/schemas/DENWIS"
+#        sepsis:
+#          $ref: "#/components/schemas/Sepsis"
+        news2:
+          $ref: "#/components/schemas/NEWS2"
+        covid:
+          $ref: "#/components/schemas/COVID"
+      additionalProperties: false
+      minProperties: 1
+
+    COVID:
+      anyOf:
+      - properties:
+          symptoms:
+            required:
+              - date_of_first_symptoms
+              - specific_signs
+            properties:
+              date_of_first_symptoms:
+                type: string
+                format: date
+              specific_signs:
+                type: array
+                items:
+                  properties:
+                    value:
+                      type: string
+                    code:
+                      type: string
+                      pattern: '^\d+$'
+        required:
+          - symptoms
+      - properties:
+          covid_exposure:
+            properties:
+              confirmed_exposure:
+                properties:
+                  code:
+                    $ref: "#/components/schemas/at_code"
+                  value:
+                    type: string
+              suspected_contact:
+                properties:
+                  code:
+                    $ref: "#/components/schemas/at_code"
+                  value:
+                    type: string
+        minProperties: 1
+        additionalProperties: false
+    DENWIS:
+      properties:
+        q1_breathing:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q2_circulation:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q3_temperature:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q4_mentation:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q5_agitation:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q6_pain:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q7_trajectory:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q8_patient_subjective:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q9_nurse_subjective:
+          $ref: "#/components/schemas/code_value_ordinal"
+        q10_other_comment:
+          type: string
+        total_score:
+          description: We think this score is provided by the nurse
+          type: integer
+      required:
+        - q1_breathing
+        - q2_circulation
+        - q3_temperature
+        - q4_mentation
+        - q5_agitation
+        - q6_pain
+        - q7_trajectory
+        - q8_patient_subjective
+        - q9_nurse_subjective
+        - total_score
+      additionalProperties: false
+    NEWS2:
+      properties:
+        temperature:
+          type: integer
+        pulse:
+          type: integer
+        respiration_rate:
+          type: integer
+        spO2:
+          type: integer
+        inspired_oxygen:
+          oneOf:
+            - properties:
+                oxygen_delivery:
+                  type: string
+                  enum: ["Room air"]
+              required:
+                - oxygen_delivery
+            - properties:
+                flow_rate:
+                  type: number
+                  description: Flow rate in litres per minute
+                oxygen_delivery:
+                  type: string
+              required:
+                - flow_rate
+                - oxygen_delivery
+        acvpu:
+          properties:
+            code:
+              $ref: '#/components/schemas/at_code'
+            value:
+              type: string
+          required:
+            - code
+            - value
+        systolic:
+          type: integer
+          description: Systolic blood pressure in mmHg
+        diastolic:
+          type: integer
+          description: Diastolic blood pressure in mmHg
+      required:
+        - temperature
+        - pulse
+        - respiration_rate
+        - spO2
+        - inspired_oxygen
+        - acvpu
+        - systolic
+        - diastolic
+#    Sepsis:
+#      properties:
+
+    AssessmentSummary:
+      description: Condensed assessment data for a patient overview
+      anyOf:
+      - properties:
+          denwis:
+            $ref: "#/components/schemas/DENWISSummary"
+        required:
+          - denwis
+      - properties:
+          sepsis:
+            $ref: "#/components/schemas/SepsisSummary"
+        required:
+          - sepsis
+      - properties:
+          news2:
+            $ref: "#/components/schemas/NEWS2Summary"
+        required:
+          - news2
+      - properties:
+          covid:
+            $ref: "#/components/schemas/COVIDSummary"
+        required:
+          - covid
+
+    COVIDSummary:
+      properties:
+        suspected_covid_status:
+          type: string
+          enum:
+            - red
+            - greed
+            - amber
+            - grey
+        covid_test_request:
+          properties:
+            date:
+              type: string
+              format: date-time
+            comment:
+              type: string
+          required:
+            - date
+        date_isolation_due_to_end:
+          type: string
+          format: date-time
+      required:
+        - suspected_covid_status
+        - covid_test_request
+        - date_isolation_due_to_end
+    DENWISSummary:
+      properties:
+        value:
+          type: integer
+        trend:
+          type: string
+      required:
+        - value
+        - trend
+    NEWS2Summary:
+      properties:
+        clinical_risk:
+          type: string
+          enum:
+            - Low
+            - Low-medium
+            - Medium
+            - High
+        score:
+          $ref: '#/components/schemas/NEWS2Score'
+        trend:
+          enum:
+            - increasing
+            - decreasing
+            - same
+            - first
+      required:
+        - clinical_risk
+        - score
+        - trend
+    NEWS2Score:
+      properties:
+        respiration_rate:
+          $ref: '#/components/schemas/code_value_ordinal'
+        spo_scale_1:
+          $ref: '#/components/schemas/code_value_ordinal'
+        air_or_oxygen:
+          $ref: '#/components/schemas/code_value_ordinal'
+        systolic_blood_pressure:
+          $ref: '#/components/schemas/code_value_ordinal'
+        pulse:
+          $ref: '#/components/schemas/code_value_ordinal'
+        consciousness:
+          $ref: '#/components/schemas/code_value_ordinal'
+        temperature:
+          $ref: '#/components/schemas/code_value_ordinal'
+        total_score:
+          type: integer
+      required:
+        - respiration_rate
+        - spo_scale_1
+        - air_or_oxygen
+        - systolic_blood_pressure
+        - pulse
+        - consciousness
+        - temperature
+        - total_score
+    SepsisSummary:
+      properties:
+        value:
+          description: Sepsis warning flag colour
+          enum:
+            - red
+            - green
+            - amber
+            - grey
+      required:
+        - value
+
