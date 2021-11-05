@@ -54,7 +54,7 @@ my $news2_draft = $app->post_ok('/v1/patient/' . $patients->[2]->{uuid} . '/cdr/
     ->json_has('/news2/score')
     ->or(sub { diag Dumper $app->tx->res->json });
 
-$app->post_ok('/v1/patient/' . $patients->[1]->{uuid} . '/cdr' => json => $news2)
+$app->post_ok('/v1/patient/' . $patients->[1]->{uuid} . '/cdr' => json => $news2_draft)
     ->status_is(204, "NEWS2 posted OK")
     ->or(sub { diag Dumper $app->tx->res->json });
 
