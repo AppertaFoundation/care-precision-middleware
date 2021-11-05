@@ -356,7 +356,8 @@
                                         <value>Rate</value>
                                     </name>
                                     <value xsi:type="DV_QUANTITY">
-                                        <magnitude>[% json_path('/assessment/news2/respirations') %]</magnitude>
+                                        <magnitude>[%
+                                        json_path('/assessment/news2/respiration_rate') %]</magnitude>
                                         <units>/min</units>
                                         <precision>0</precision>
                                     </value>
