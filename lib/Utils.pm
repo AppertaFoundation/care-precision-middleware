@@ -38,7 +38,7 @@ sub composition_to_xml($self, $composition) {
         my $big_href = shift;
         my $tt2 = Template->new({ ENCODING => 'utf8', ABSOLUTE => 1 });
 
-        my $json_path = sub { JSON::Pointer->get($big_href, $_[0]) };
+        my $json_path = sub { JSON::Pointer->get($big_href, $_[0], 1) };
         my $xml_tt = curfile->dirname->sibling('etc/composition.xml.tt2')->to_abs->to_string;
 
         $tt2->process($xml_tt, {
