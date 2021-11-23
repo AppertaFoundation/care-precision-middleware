@@ -46,15 +46,16 @@ $app->post_ok('/v1/patient/' . $patients->[0]->{uuid} . '/cdr' => json => $denwi
     ->status_is(204, "DENWIS posted OK")
     ->or(sub { diag Dumper $app->tx->res->json });
 
-
 my $news2 = decode_json(curfile->dirname->child('etc/news2-minimum-fields.json')->slurp);
 
-my $news2_draft = $app->post_ok('/v1/patient/' . $patients->[2]->{uuid} . '/cdr/draft' => json => $news2)
+$app->post_ok('/v1/patient/' . $patients->[1]->{uuid} . '/cdr/draft' => json => $news2)
     ->status_is(200, "NEWS2 draft posted OK")
     ->json_has('/news2/score')
     ->or(sub { diag Dumper $app->tx->res->json });
 
-$app->post_ok('/v1/patient/' . $patients->[1]->{uuid} . '/cdr' => json => $news2_draft)
+my $news2_draft_response = $app->tx->res->json;
+
+$app->post_ok('/v1/patient/' . $patients->[1]->{uuid} . '/cdr' => json => $news2_draft_response)
     ->status_is(204, "NEWS2 posted OK")
     ->or(sub { diag Dumper $app->tx->res->json });
 
