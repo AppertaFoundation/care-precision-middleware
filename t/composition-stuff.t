@@ -46,10 +46,10 @@ my $patient_uuid = $all_patients->[0]->{uuid};
 
 $utils->store_composition($patient_uuid, $xml_composition);
 
-my $compositions = $utils->{ehr_helper}->get_compositions($patient_uuid);
+my @compositions = $utils->{ehr_helper}->get_compositions($patient_uuid);
 
 # Just don't crash - don't need return val
-$utils->assessments_from_xml($compositions->[0]);
+$utils->assessments_from_xml($compositions[0]);
 
 my $composed = $utils->compose_assessments( $patient_uuid );
 
