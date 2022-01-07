@@ -306,7 +306,7 @@ components:
     NEWS2:
       properties:
         temperature:
-          type: integer
+          type: number
         pulse:
           type: integer
         respiration_rate:
